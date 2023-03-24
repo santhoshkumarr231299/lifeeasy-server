@@ -22,20 +22,20 @@ app.use(cors({
   credentials : true,
 }))
 
-var connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'root',
-  database: 'pharmacy_management'
-})
-
 // var connection = mysql.createConnection({
-//   host: process.env.DB_HOST_NAME,
-//   port: process.env.DB_PORT_NUMBER,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: process.env.DB_DATABASE_NAME,
+//   host: 'localhost',
+//   user: 'root',
+//   password: 'root',
+//   database: 'pharmacy_management'
 // })
+
+var connection = mysql.createConnection({
+  host: process.env.DB_HOST_NAME,
+  port: process.env.DB_PORT_NUMBER,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE_NAME,
+})
 
 connection.connect();
 
