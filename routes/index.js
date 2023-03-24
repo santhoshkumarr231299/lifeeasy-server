@@ -29,15 +29,14 @@ app.use(cors({
 //   database: 'pharmacy_management'
 // })
 
-var connection = mysql.createConnection({
+var connection = mysql.createPool({
+  connectionLimit : 10,
   host: process.env.DB_HOST_NAME,
   port: process.env.DB_PORT_NUMBER,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE_NAME,
 })
-
-connection.connect();
 
 var session = new Map();
 
