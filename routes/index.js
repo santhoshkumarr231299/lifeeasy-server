@@ -44,12 +44,14 @@ var otpRecords = new Map();
 
 
 schdule.scheduleJob('0 * * * *', () => {
+  console.log("Deleting OTP Records...");
   for(let entry of Object.entries(otpRecords)) {
     delete otpRecords[entry[0]];
   }
 });
 
 schdule.scheduleJob('0 3 * * *', () => {
+  console.log("Deleting Sessions...");
   for(let entry of Object.entries(session)) {
     delete session[entry[0]];
   }
