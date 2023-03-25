@@ -752,7 +752,7 @@ try {
         }
       })
    } 
-    }catch((err) => {
+    }catch(err) {
       res.status(200).send({
         status: "error",
         message: "Something went wrong"
