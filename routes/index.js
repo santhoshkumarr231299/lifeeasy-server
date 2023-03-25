@@ -58,8 +58,6 @@ schdule.scheduleJob('0 3 * * *', () => {
 });
 
 app.use(function (req,res,next) {
-  let date = new Date();
-  console.log(`[---${date.getDate()}/${date.getMonth()}/${date.getFullYear()}  ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}---]   ${req.method}   ${req.path}`); 
   next();
 })
 
@@ -674,86 +672,92 @@ app.post("/security/generate-email", (req, res) => {
 })
 
 app.post("/forgot-pass-change", (req, res) => {
+try {
   let date = new Date();
+  if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
+    if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
+      delete otpRecords[req.body.secretKey];
+      res.status(200).send({
+        status: "error",
+        message: "OTP expired"
+      })
+      return;
+    }
+  } else if (!req.body.secretKey || !otpRecords[req.body.secretKey]) {
+    delete otpRecords[req.body.secretKey];
+    res.status(200).send({
+      status: "error",
+      message: "OTP expired"
+    })
+    return;
+  }
+  else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
+    delete otpRecords[req.body.secretKey];
+    res.status(200).send({
+      status: "error",
+      message: "Verify your email..."
+    })
+    return;
+  } 
+  else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
+    if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
+      res.status(200).send({
+        status: "error",
+        message: "OTP expired"
+      })
+      return;
+    }
+  } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
+      res.status(200).send({
+        status: "error",
+        message: "Invalid OTP"
+      })
+      return;
+  }else {
+      connection.query('update users set password = ? where username = ?', [req.body.newPass, req.body.username], (err, result, fields) => {
 
-      if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
-        if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
-          delete otpRecords[req.body.secretKey];
+        if (err) {
           res.status(200).send({
             status: "error",
-            message: "OTP expired"
+            message: "Something went wrong"
           })
-          return;
-        }
-      } else if (!req.body.secretKey || !otpRecords[req.body.secretKey]) {
-        delete otpRecords[req.body.secretKey];
-        res.status(200).send({
-          status: "error",
-          message: "OTP expired"
-        })
-        return;
-      }
-      else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
-        delete otpRecords[req.body.secretKey];
-        res.status(200).send({
-          status: "error",
-          message: "Verify your email..."
-        })
-        return;
-      } 
-      else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
-        if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
-          res.status(200).send({
-            status: "error",
-            message: "OTP expired"
-          })
-          return;
-        }
-      } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
-          res.status(200).send({
-            status: "error",
-            message: "Invalid OTP"
-          })
-          return;
-      }else {
-          connection.query('update users set password = ? where username = ?', [req.body.newPass, req.body.username], (err, result, fields) => {
+        } 
+        else {
 
-            if (err) {
+          var mailOptions = {
+            from: 'PharmSimple <security-alert@pharmsimple.com>',
+            to: otpRecords[req.body.secretKey].mail,
+            subject: 'Security Alert',
+            text: 'Your PharmSimple Account Password has been Changed',
+          };
+
+          transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
               res.status(200).send({
                 status: "error",
-                message: "Something went wrong"
+                message: "Enter a valid email"
               })
-            } 
-            else {
-
-              var mailOptions = {
-                from: 'PharmSimple <security-alert@pharmsimple.com>',
-                to: otpRecords[req.body.secretKey].mail,
-                subject: 'Security Alert',
-                text: 'Your PharmSimple Account Password has been Changed',
-              };
-
-              transporter.sendMail(mailOptions, function (error, info) {
-                if (error) {
-                  res.status(200).send({
-                    status: "error",
-                    message: "Enter a valid email"
-                  })
-                  return;
-                } else {
-                  console.log('Email sent: ' + info.response);
-                }
-              });
-
-              delete otpRecords[req.body.secretKey];
-
-              res.status(200).send({
-                status: "success",
-                message: "Password has been Changed"
-              })
+              return;
+            } else {
+              console.log('Email sent: ' + info.response);
             }
+          });
+
+          delete otpRecords[req.body.secretKey];
+
+          res.status(200).send({
+            status: "success",
+            message: "Password has been Changed"
           })
-  } 
+        }
+      })
+   } 
+    }catch((err) => {
+      res.status(200).send({
+        status: "error",
+        message: "Something went wrong"
+      })
+    }
 })
 
 app.post("/update-user-details", (req, res) => {
@@ -1668,14 +1672,12 @@ app.post("/payment/orders", async (req, res) => {
       res.status(500).send("Some error occured")
     }
     else {
-      console.log("result : ",result);
       if (!result || (result.length === 0)) {
         res.status(200).send("Cart is Empty");
         return;
       }
       else {
         let totalPay = 0;
-        console.log("pay : ",totalPay);
         result.forEach(data => totalPay += (+data.quantity) * (+data.price));
         try {
           const instance = new Razorpay({
@@ -1705,7 +1707,7 @@ app.post("/payment/orders", async (req, res) => {
 });
 
 app.post("/payment/success", (req,res) => {
-  console.log(req.body);
+  console.log("Payment successfull : " + req.body.razorpayPaymentId);
   res.send({
     message : "Payment successful"
   })
