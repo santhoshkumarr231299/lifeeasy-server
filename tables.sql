@@ -14,7 +14,7 @@ CREATE TABLE users (username varchar(256), password varchar(256), role int, role
 
 CREATE TABLE approved_items (mid varchar(256), username varchar(256), medname varchar(256), quantity varchar(256), price varchar(256), pharmacy_name varchar(256), delivery_men varchar(256) default 'NOT_ALLOCATED', is_delivered int default 0);
 
-CREATE TABLE cartitems (mid varchar(256), username varchar(256), medname varchar(256), quantity int, price int, pharm_name varchar(256), is_ordered int default 0);
+CREATE TABLE cartitems (mid varchar(256), username varchar(256), medname varchar(256), quantity int, price int, pharm_name varchar(256), is_ordered int default 0, pharm_name varchar(256));
 
 TRUNCATE approved_items;
 TRUNCATE cartitems;

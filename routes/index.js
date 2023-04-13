@@ -22,21 +22,23 @@ app.use(cors({
   credentials : true,
 }))
 
-// var connection = mysql.createConnection({
-//   host: 'localhost',
-//   user: 'root',
-//   password: 'root',
-//   database: 'pharmacy_management'
-// })
-
 var connection = mysql.createPool({
   connectionLimit : 10,
-  host: process.env.DB_HOST_NAME,
-  port: process.env.DB_PORT_NUMBER,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE_NAME,
+  port : 3306,
+  host: 'localhost',
+  user: 'root',
+  password: '#' + process.env.DB_LOCAL_PASSWORD,
+  database: 'pharmacy_management'
 })
+
+// var connection = mysql.createPool({
+//   connectionLimit : 10,
+//   host: process.env.DB_HOST_NAME,
+//   port: process.env.DB_PORT_NUMBER,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   database: process.env.DB_DATABASE_NAME,
+// })
 
 var session = new Map();
 
@@ -211,8 +213,8 @@ app.post('/new-user', (req, res) => {
         return;
       }
     } else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
-      delete otpRecords[req.body.secretKey];
       if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
+        delete otpRecords[req.body.secretKey];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
@@ -227,7 +229,7 @@ app.post('/new-user', (req, res) => {
         return;
     }
     else {
-      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, req.body.password, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : '', req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1],[2],[3],[4],[5],[6],[7],[9][10]' : '[8]'], (err1, result1, fields1) => {
+      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, req.body.password, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : -1, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1],[2],[3],[4],[5],[6],[7],[9][10]' : '[8]'], (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
           res.status(200).send({
