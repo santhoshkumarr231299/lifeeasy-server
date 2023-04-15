@@ -3,6 +3,7 @@ var app = express();
 var cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 var mysql = require('mysql');
+const mysql2 = require('mysql2')
 var nodemailer = require('nodemailer');
 const Razorpay = require("razorpay");
 const schdule = require("node-schedule");
@@ -22,14 +23,16 @@ app.use(cors({
   credentials : true,
 }))
 
-var connection = mysql.createPool({
-  connectionLimit : 10,
-  port : 3306,
-  host: 'localhost',
-  user: 'root',
-  password: '#' + process.env.DB_LOCAL_PASSWORD,
-  database: 'pharmacy_management'
-})
+// var connection = mysql.createPool({
+//   connectionLimit : 10,
+//   port : 3306,
+//   host: 'localhost',
+//   user: 'root',
+//   password: '#' + process.env.DB_LOCAL_PASSWORD,
+//   database: 'pharmacy_management'
+// })
+
+var connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
 
 // var connection = mysql.createPool({
 //   connectionLimit : 10,
