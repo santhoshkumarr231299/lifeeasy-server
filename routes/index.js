@@ -1158,7 +1158,7 @@ app.post('/add-to-cart', (req, res) => {
       })
     }
     else {      
-        connection.query('insert into cartitems (mid, username, medname, quantity, price,pharmacy_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))', [req.body.mid, session[req.body.secretKey].username, req.body.medName,req.body.quantity, req.body.mid, req.body.medName], (err2, result2, fields2) => {
+        connection.query('insert into cartitems (mid, username, medname, quantity, price,pharm_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))', [req.body.mid, session[req.body.secretKey].username, req.body.medName,req.body.quantity, req.body.mid, req.body.medName], (err2, result2, fields2) => {
           if (err2) {
             console.log(err2);
             res.status(200).send({
