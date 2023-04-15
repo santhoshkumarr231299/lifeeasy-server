@@ -1438,7 +1438,7 @@ app.post('/get-ordered-items-for-approval', (req, res) => {
     })
     return;
   }
-  connection.query('select * from cartitems where is_ordered = 1 and pharmacy_name = ?', [session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select * from cartitems where is_ordered = 1 and pharm_name = ?', [session[req.body.secretKey].pharmacy], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
