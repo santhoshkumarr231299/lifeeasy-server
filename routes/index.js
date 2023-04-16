@@ -130,6 +130,8 @@ app.post('/logged-in', (req, res) => {
           lastAccessedScreen: result[0].last_accessed,
           haveAccessTo: result[0].have_access_to,
           pharmacy: session[req.body.secretKey].pharmacy,
+          subscriptionPack : result[0].subscription_pack,
+          DateOfSubscription : result[0].date_of_subscription,
         })
       } else {
         res.status(200).send({
@@ -162,6 +164,8 @@ app.post('/login', (req, res) => {
                 lastAccessedScreen: result[0].last_accessed,
                 pharmacy: result[0].pharmacy_name,
                 secretKey: secretKey,
+                subscriptionPack : result[0].subscription_pack,
+                DateOfSubscription : result[0].date_of_subscription,
                 message: 'success'
               };
               session[secretKey] = validatedUser;
@@ -1749,6 +1753,57 @@ app.post("/payment/success", (req,res) => {
   res.send({
     message : "Payment successful"
   })
+})
+
+app.post('/payment/subscription', async (req,res) => {
+  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+    res.status(500).send("Unauthorized");
+    return;
+  }
+  else {
+        let totalPay = req.body.subscriptionType == 'monthly' ? 10 : 100;
+        try {
+          const instance = new Razorpay({
+              key_id: process.env.RAZORPAY_PAYMENT_KEY_ID,
+              key_secret: process.env.RAZORPAY_PAYMENT_KEY_SECRET,
+          });
+    
+          const options = {
+              amount: totalPay*100, 
+              currency: "INR",
+              receipt: "receipt_order_74394",
+          };
+    
+          const order = await instance.orders.create(options);
+    
+          if (!order) return res.status(500).send("Some error occured");
+    
+          res.json(order);
+      } catch (error) {
+        console.log("error", error);
+          res.status(500).send(error);
+      }
+  }
+})
+
+app.post("/activate-subscription", (req,res) => {
+  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+    res.status(500).send("Unauthorized");
+    return;
+  } else {
+    connection.query('update users set subscription_pack = ?, date_of_subscription = now() where username = ?', [req.body.subscriptionType,session[req.body.secretKey].username], (err, result, fields) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send("Some error occured")
+      }
+      else {
+        res.send({
+          status : "success",
+          message : `Subscription Activated : ${req.body.subscriptionType}`,
+        })
+      }
+    })
+  }
 })
 
 module.exports = app;
