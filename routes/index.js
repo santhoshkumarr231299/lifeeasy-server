@@ -7,6 +7,7 @@ const mysql2 = require('mysql2')
 var nodemailer = require('nodemailer');
 const Razorpay = require("razorpay");
 const schdule = require("node-schedule");
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 var transporter = nodemailer.createTransport({
@@ -151,12 +152,12 @@ app.post('/logged-in', (req, res) => {
 
 app.post('/login', (req, res) => {
   try {
-    connection.query('select * from users where username = ?', [req.body.username, req.body.password, req.body.pharmacy], (err, result, fields) => {
+    connection.query('select * from users where username = ?', [req.body.username], async (err, result, fields) => {
       if (result && result.length == 1) {
         let username = result[0].username;
         let password = result[0].password;
         if(username == req.body.username) {
-          if(password == req.body.password) {
+          if(await bcrypt.compare(req.body.password, password)) {
               const secretKey = uuidv4();
               var validatedUser = {
                 username: result[0].username,
@@ -212,7 +213,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/new-user', (req, res) => {
-  connection.query('select * from users where username = ?', [req.body.username], (err, result, fields) => {
+  connection.query('select * from users where username = ?', [req.body.username], async (err, result, fields) => {
     let date = new Date();
     if (err) {
       console.log(err);
@@ -269,7 +270,8 @@ app.post('/new-user', (req, res) => {
         return;
     }
     else {
-      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, req.body.password, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : -1, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1][2][3][4][5][6][7][9][10]' : '[8]'], (err1, result1, fields1) => {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, hashedPassword, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : -1, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1][2][3][4][5][6][7][9][10]' : '[8]'], (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
           res.status(200).send({
@@ -535,7 +537,7 @@ app.post('/update-pass', (req, res) => {
     })
     return;
   }
-  connection.query('select username,email from users where username = ? and password = ? and pharmacy_name = ?', [session[req.body.secretKey].username, req.body.oldPass, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select username, password, email from users where username = ?', [session[req.body.secretKey].username], async (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -546,7 +548,14 @@ app.post('/update-pass', (req, res) => {
       console.log(result);
       res.status(200).send({
         status: "warning",
-        message: "Wrong Old Password"
+        message: "User does not exist"
+      })
+    }
+    else if(! (await bcrypt.compare(req.body.oldPass,result[0].password))) {
+        console.log(result);
+        res.status(200).send({
+          status: "warning",
+          message: "Old Password Does Not Match"
       })
     }
     else {
@@ -558,7 +567,8 @@ app.post('/update-pass', (req, res) => {
         })
       }
       else {
-        connection.query('update users set password = ? where username = ? and pharmacy_name = ?', [req.body.newPass, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+        const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
+        connection.query('update users set password = ? where username = ?', [hashedPassword, session[req.body.secretKey].username], (err, result, fields) => {
           if (err) {
             res.status(200).send({
               status: "error",
@@ -713,7 +723,7 @@ app.post("/security/generate-email", (req, res) => {
 
 })
 
-app.post("/forgot-pass-change", (req, res) => {
+app.post("/forgot-pass-change", async (req, res) => {
 try {
   let date = new Date();
   if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
@@ -756,7 +766,8 @@ try {
       })
       return;
   }else {
-      connection.query('update users set password = ? where username = ?', [req.body.newPass, req.body.username], (err, result, fields) => {
+    const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
+      connection.query('update users set password = ? where username = ?', [hashedPassword, req.body.username], (err, result, fields) => {
 
         if (err) {
           res.status(200).send({
@@ -1056,7 +1067,7 @@ app.post('/post-delivery-man-details', (req, res) => {
     return;
   }
   var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy];
-  connection.query('insert into delivery_men set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?, pharmacy_name = ?', queryParam, (err, result, fields) => {
+  connection.query('insert into delivery_men set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?, pharmacy_name = ?', queryParam, async (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -1064,7 +1075,8 @@ app.post('/post-delivery-man-details', (req, res) => {
       })
     }
     else {
-      var queryParam1 = [req.body.name, "deliveryman", req.body.mobileNumber, session[req.body.secretKey].username, req.body.email, session[req.body.secretKey].username, '[12]', session[req.body.secretKey].pharmacy,1,session[req.body.secretKey].pharmacy,1];
+      const hashedPassword = await bcrypt.hash("deliveryman", 10);
+      var queryParam1 = [req.body.name, hashedPassword, req.body.mobileNumber, session[req.body.secretKey].username, req.body.email, session[req.body.secretKey].username, '[12]', session[req.body.secretKey].pharmacy,1,session[req.body.secretKey].pharmacy,1];
       connection.query('insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)', queryParam1, (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
@@ -1139,7 +1151,7 @@ app.post('/post-pharmacist-details', (req, res) => {
       })
     } else {
       var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
-      connection.query('insert into pharmacists set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?', queryParam, (err, result, fields) => {
+      connection.query('insert into pharmacists set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?', queryParam, async (err, result, fields) => {
         if (err) {
           res.status(200).send({
             status: "error",
@@ -1147,9 +1159,11 @@ app.post('/post-pharmacist-details', (req, res) => {
           })
         }
         else {
-          var queryParam1 = [req.body.name, 'pharmacist', 3, 11, req.body.email, session[req.body.secretKey].username, session[req.body.secretKey].username, req.body.mobileNumber, '[11]'];
+          const hashedPassword = await bcrypt.hash("pharmacist", 10);
+          var queryParam1 = [req.body.name, hashedPassword, 3, 11, req.body.email, session[req.body.secretKey].username, session[req.body.secretKey].username, req.body.mobileNumber, '[11]',session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
           connection.query('insert into users (username, password, role,last_accessed, email,pharmacy_name,branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,?,?,?,(select u.pharmacy_name from users u where username = ?),(select u.branch_id from users u where username = ?),?,?, (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?))', queryParam1, (err1, result1, fields1) => {
             if (err1) {
+              console.log(err1);
               res.status(200).send({
                 status: "error",
                 message: "Something went wrong"
@@ -1385,7 +1399,7 @@ app.post("/get-managers", (req, res) => {
   })
 })
 
-app.post("/post-new-manager", (req, res) => {
+app.post("/post-new-manager", async (req, res) => {
   if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
     res.status(200).send({
       status: "error",
@@ -1400,7 +1414,8 @@ app.post("/post-new-manager", (req, res) => {
     })
     return;
   }
-  var queryParam1 = [req.body.username, req.body.password, req.body.email, session[req.body.secretKey].username, req.body.branch, req.body.mobileNumber, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
+  const hashedPassword = await bcrypt.hash(req.body.password,10);
+  var queryParam1 = [req.body.username, hashedPassword, req.body.email, session[req.body.secretKey].username, req.body.branch, req.body.mobileNumber, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
   connection.query("insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]', (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))", queryParam1, (err1, result1, fields1) => {
     if (err1) {
       console.log(err1);
@@ -1410,7 +1425,7 @@ app.post("/post-new-manager", (req, res) => {
       })
     }
     else {
-      var queryParam = [req.body.username, req.body.password, req.body.email, req.body.username, req.body.address, session[req.body.secretKey].username];
+      var queryParam = [req.body.username, hashedPassword, req.body.email, req.body.username, req.body.address, session[req.body.secretKey].username];
       connection.query('insert into managers (username, password, email, branch_id, address, pharmacy_name) values (?,?,?,(select u.branch_id from users u where u.username = ?),?, (select uuu.pharmacy_name from users uuu where uuu.username = ?))', queryParam, (err, result, fields) => {
         if (err) {
           console.log(err);
@@ -1788,18 +1803,24 @@ app.post('/payment/subscription', async (req,res) => {
 
 app.post("/activate-subscription", (req,res) => {
   if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
-    res.status(500).send("Unauthorized");
+    res.status(500).send({
+      status : "failed",
+      message : "Unauthorized"
+    });
     return;
   } else {
     connection.query('update users set subscription_pack = ?, date_of_subscription = now() where pharmacy_name = ?', [req.body.subscriptionType,session[req.body.secretKey].pharmacy], (err, result, fields) => {
       if (err) {
         console.log(err);
-        res.status(500).send("Some error occured")
+        res.status(500).send({
+          status : "failed",
+          message : "Some error occured"
+        })
       }
       else {
         res.send({
           status : "success",
-          message : `Subscription Activated : ${req.body.subscriptionType}`,
+          message : `Subscription Activated : ${req.body.subscriptionType[0].toUpperCase() + req.body.subscriptionType.substring(1)}`,
         })
       }
     })
