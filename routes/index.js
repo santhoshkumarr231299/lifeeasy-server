@@ -148,30 +148,63 @@ app.post('/logged-in', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
-  connection.query('select * from users where username = ? and password = ?', [req.body.username, req.body.password, req.body.pharmacy], (err, result, fields) => {
-    if (result && result.length == 1) {
-      const secretKey = uuidv4();
-      var validatedUser = {
-        username: result[0].username,
-        role: result[0].role,
-        lastAccessedScreen: result[0].last_accessed,
-        pharmacy: result[0].pharmacy_name,
-        secretKey: secretKey,
-        message: 'success'
-      };
-      session[secretKey] = validatedUser;
-      console.log(`user logged in : `, validatedUser.username);
-      res.send(validatedUser);
-    }
-    else {
-      res.status(200).send({
-        username: '',
-        role: '',
-        lastAccessedScreen: 0,
-        message: 'failed'
-      })
-    }
-  })
+  try {
+    connection.query('select * from users where username = ?', [req.body.username, req.body.password, req.body.pharmacy], (err, result, fields) => {
+      if (result && result.length == 1) {
+        let username = result[0].username;
+        let password = result[0].password;
+        if(username == req.body.username) {
+          if(password == req.body.password) {
+              const secretKey = uuidv4();
+              var validatedUser = {
+                username: result[0].username,
+                role: result[0].role,
+                lastAccessedScreen: result[0].last_accessed,
+                pharmacy: result[0].pharmacy_name,
+                secretKey: secretKey,
+                message: 'success'
+              };
+              session[secretKey] = validatedUser;
+              console.log(`user logged in : `, validatedUser.username);
+              res.send(validatedUser);
+          } else {
+            res.status(200).send({
+              username: '',
+              role: '',
+              lastAccessedScreen: 0,
+              message: 'failed',
+              comment : 'Username - Password Mismatch'
+            })
+          }
+        } else {
+          res.status(200).send({
+            username: '',
+            role: '',
+            lastAccessedScreen: 0,
+            message: 'failed',
+            comment : 'Username does not Exist'
+          })
+        }
+      } else {
+        res.status(200).send({
+          username: '',
+          role: '',
+          lastAccessedScreen: 0,
+          message: 'failed',
+          comment : 'Username does not Exist'
+        })
+      }
+    })
+  } catch(e) {
+    console.log('/login : ', e);
+    res.status(200).send({
+      username: '',
+      role: '',
+      lastAccessedScreen: 0,
+      message: 'failed',
+      comment : 'Failed to Login - try again later'
+    })
+  }
 });
 
 app.post('/new-user', (req, res) => {
@@ -1474,7 +1507,7 @@ app.post('/approve-order', (req, res) => {
     return;
   }
   var queryParam1 = [req.body.username, req.body.mname, req.body.mid];
-  connection.query("insert into approved_items (mid, username, medname, quantity,price, pharmacy_name) select ci.mid, ci.username, ci.medname, ci.quantity, ci.price, ci.pharmacy_name from cartitems ci where username = ? and medname = ? and mid = ? and is_ordered = 1", queryParam1, (err1, result1, fields1) => {
+  connection.query("insert into approved_items (mid, username, medname, quantity,price, pharmacy_name) select ci.mid, ci.username, ci.medname, ci.quantity, ci.price, ci.pharm_name from cartitems ci where username = ? and medname = ? and mid = ? and is_ordered = 1", queryParam1, (err1, result1, fields1) => {
     if (err1) {
       console.log(err1);
       res.status(200).send({
