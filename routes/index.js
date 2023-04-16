@@ -269,7 +269,7 @@ app.post('/new-user', (req, res) => {
         return;
     }
     else {
-      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, req.body.password, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : -1, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1],[2],[3],[4],[5],[6],[7],[9][10]' : '[8]'], (err1, result1, fields1) => {
+      connection.query('insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)', [req.body.username, req.body.password, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 2, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : 8, req.body.email, req.body.mobileNumber, req.body.pharmacyName, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? 1 : -1, req.body.pharmacyName && req.body.pharmacyName.trim() !== '' ? '[1][2][3][4][5][6][7][9][10]' : '[8]'], (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
           res.status(200).send({
@@ -1064,8 +1064,8 @@ app.post('/post-delivery-man-details', (req, res) => {
       })
     }
     else {
-      var queryParam1 = [req.body.name, "deliveryman", req.body.mobileNumber, session[req.body.secretKey].username, req.body.email, session[req.body.secretKey].username, '[12]'];
-      connection.query('insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?', queryParam1, (err1, result1, fields1) => {
+      var queryParam1 = [req.body.name, "deliveryman", req.body.mobileNumber, session[req.body.secretKey].username, req.body.email, session[req.body.secretKey].username, '[12]', session[req.body.secretKey].pharmacy,1,session[req.body.secretKey].pharmacy,1];
+      connection.query('insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)', queryParam1, (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
           res.status(200).send({
@@ -1138,7 +1138,7 @@ app.post('/post-pharmacist-details', (req, res) => {
         message: "Username already exists"
       })
     } else {
-      var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username];
+      var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
       connection.query('insert into pharmacists set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?', queryParam, (err, result, fields) => {
         if (err) {
           res.status(200).send({
@@ -1148,7 +1148,7 @@ app.post('/post-pharmacist-details', (req, res) => {
         }
         else {
           var queryParam1 = [req.body.name, 'pharmacist', 3, 11, req.body.email, session[req.body.secretKey].username, session[req.body.secretKey].username, req.body.mobileNumber, '[11]'];
-          connection.query('insert into users (username, password, role,last_accessed, email,pharmacy_name,branch_id, mobile_number, have_access_to) values (?,?,?,?,?,(select u.pharmacy_name from users u where username = ?),(select u.branch_id from users u where username = ?),?,?)', queryParam1, (err1, result1, fields1) => {
+          connection.query('insert into users (username, password, role,last_accessed, email,pharmacy_name,branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,?,?,?,(select u.pharmacy_name from users u where username = ?),(select u.branch_id from users u where username = ?),?,?, (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?))', queryParam1, (err1, result1, fields1) => {
             if (err1) {
               res.status(200).send({
                 status: "error",
@@ -1400,8 +1400,8 @@ app.post("/post-new-manager", (req, res) => {
     })
     return;
   }
-  var queryParam1 = [req.body.username, req.body.password, req.body.email, session[req.body.secretKey].username, req.body.branch, req.body.mobileNumber];
-  connection.query("insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]')", queryParam1, (err1, result1, fields1) => {
+  var queryParam1 = [req.body.username, req.body.password, req.body.email, session[req.body.secretKey].username, req.body.branch, req.body.mobileNumber, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
+  connection.query("insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]', (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))", queryParam1, (err1, result1, fields1) => {
     if (err1) {
       console.log(err1);
       res.status(200).send({
@@ -1791,7 +1791,7 @@ app.post("/activate-subscription", (req,res) => {
     res.status(500).send("Unauthorized");
     return;
   } else {
-    connection.query('update users set subscription_pack = ?, date_of_subscription = now() where username = ?', [req.body.subscriptionType,session[req.body.secretKey].username], (err, result, fields) => {
+    connection.query('update users set subscription_pack = ?, date_of_subscription = now() where pharmacy_name = ?', [req.body.subscriptionType,session[req.body.secretKey].pharmacy], (err, result, fields) => {
       if (err) {
         console.log(err);
         res.status(500).send("Some error occured")
