@@ -19,9 +19,10 @@ var transporter = nodemailer.createTransport({
 });
 
 app.use(cors({
-  origin: '*',
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
-  credentials : true,
+  credentials : false,
+  exposedHeaders: [process.env.AUTH_NAME],
 }))
 
 // var connection = mysql.createPool({
@@ -52,7 +53,7 @@ var otpRecords = new Map();
 schdule.scheduleJob('0 * * * *', () => {
   console.log("Deleting OTP Records...");
   for(let entry of Object.entries(otpRecords)) {
-    delete otpRecords[entry[0]];
+    delete otpRecords[entry[0]]; 
   }
 });
 
@@ -117,20 +118,20 @@ app.post("/check-username", (req,res) => {
 
 app.post('/logged-in', (req, res) => {
   try {
-    if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+    if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
       res.status(200).send({
         username: "",
       })
       return;
     }
-    connection.query("select * from users where username = ?", [session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+    connection.query("select * from users where username = ?", [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
       if (result && result.length === 1) {
         res.status(200).send({
-          username: session[req.body.secretKey].username,
-          role: session[req.body.secretKey].role,
+          username: session[req.headers.authorization].username,
+          role: session[req.headers.authorization].role,
           lastAccessedScreen: result[0].last_accessed,
           haveAccessTo: result[0].have_access_to,
-          pharmacy: session[req.body.secretKey].pharmacy,
+          pharmacy: session[req.headers.authorization].pharmacy,
           subscriptionPack : result[0].subscription_pack,
           DateOfSubscription : result[0].date_of_subscription,
         })
@@ -170,7 +171,8 @@ app.post('/login', (req, res) => {
                 message: 'success'
               };
               session[secretKey] = validatedUser;
-              console.log(`user logged in : `, validatedUser.username);
+              console.log(`user logged in : `, validatedUser.username); 
+              res.setHeader(process.env.AUTH_NAME, secretKey);
               res.send(validatedUser);
           } else {
             res.status(200).send({
@@ -229,40 +231,40 @@ app.post('/new-user', (req, res) => {
       })
 
     }
-    else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
+    else if (!otpRecords[req.headers.authorization] || !otpRecords[req.headers.authorization].mail) {
       res.status(200).send({
         status: "error",
         message: "Verify your email..."
       })
       return;
     } 
-    else if (otpRecords[req.body.secretKey].mail !== req.body.email) {
-      delete otpRecords[req.body.secretKey];
+    else if (otpRecords[req.headers.authorization].mail !== req.body.email) {
+      delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
         message: "Verify your email..."
       })
       return;
     }
-    else if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
-      if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
-        delete otpRecords[req.body.secretKey];
+    else if (otpRecords[req.headers.authorization].minute > date.getMinutes()) {
+      if (date.getMinutes + (60 - otpRecords[req.headers.authorization].minute) > 5) {
+        delete otpRecords[req.headers.authorization];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
-      if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
-        delete otpRecords[req.body.secretKey];
+    } else if (otpRecords[req.headers.authorization].minute < date.getMinutes()) {
+      if (date.getMinutes() - otpRecords[req.headers.authorization].minute > 5) {
+        delete otpRecords[req.headers.authorization];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
+    } else if (otpRecords[req.headers.authorization].otp !== req.body.otp) {
         res.status(200).send({
           status: "error",
           message: "Invalid OTP"
@@ -282,7 +284,7 @@ app.post('/new-user', (req, res) => {
           try {
             var mailOptions = {
               from: 'PharmSimple <security-alert@pharmsimple.com>',
-              to: otpRecords[req.body.secretKey].mail,
+              to: otpRecords[req.headers.authorization].mail,
               subject: 'Congratulations',
               text: 'Your PharmSimple ' + (req.body.pharmacyName === "" ? "" : "Management ") + 'Account has been Created Successfully',
             };
@@ -299,7 +301,7 @@ app.post('/new-user', (req, res) => {
               }
             });
 
-            delete otpRecords[req.body.secretKey];
+            delete otpRecords[req.headers.authorization];
 
             res.status(200).send({
               status: 'success',
@@ -319,11 +321,11 @@ app.post('/new-user', (req, res) => {
 })
 
 app.post('/get-medicines', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send([]);
     return;
   }
-  connection.query('select * from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select distinct us.pharmacy_name from users us where username = ?))', [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('select * from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select distinct us.pharmacy_name from users us where username = ?))', [session[req.headers.authorization].username], (err, result, fields) => {
     if (!result || (result.length === 0)) {
       res.status(200).send([]);
       return;
@@ -348,7 +350,7 @@ app.post('/get-medicines', (req, res) => {
 })
 
 app.post('/post-medicine', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
@@ -356,7 +358,7 @@ app.post('/post-medicine', (req, res) => {
     return;
   }
   var sizeOfMed = 1;
-  connection.query('select max(mid) as total from medicines', [session[req.body.secretKey].username], (err1, result1, fields1) => {
+  connection.query('select max(mid) as total from medicines', [session[req.headers.authorization].username], (err1, result1, fields1) => {
     if(err1) {
       console.log(err1);
         res.status(200).send({
@@ -369,7 +371,7 @@ app.post('/post-medicine', (req, res) => {
 
       sizeOfMed = (+result1[0].total) + 1;
 
-      connection.query('select count(mid) as total from medicines m inner join users u on m.added_by = u.username where u.pharmacy_name = ? and m.mname = ?', [session[req.body.secretKey].pharmacy,req.body.medName], (err3, result3, fields3) => {
+      connection.query('select count(mid) as total from medicines m inner join users u on m.added_by = u.username where u.pharmacy_name = ? and m.mname = ?', [session[req.headers.authorization].pharmacy,req.body.medName], (err3, result3, fields3) => {
         if(err3) {
           console.log(err3);
           res.status(200).send({
@@ -385,7 +387,7 @@ app.post('/post-medicine', (req, res) => {
           return ;
         }
         else {
-          var queryParam = [session[req.body.secretKey].username, sizeOfMed, req.body.medName, req.body.medCompany, req.body.medQuantity, req.body.medExpiryDate, req.body.medMrp, req.body.medRate, (req.body.medStatus === 'ACTIVE' ? '1' : '0'), session[req.body.secretKey].username];
+          var queryParam = [session[req.headers.authorization].username, sizeOfMed, req.body.medName, req.body.medCompany, req.body.medQuantity, req.body.medExpiryDate, req.body.medMrp, req.body.medRate, (req.body.medStatus === 'ACTIVE' ? '1' : '0'), session[req.headers.authorization].username];
   
           connection.query("insert into medicines (username, mid, mname, mcompany, quantity, expiry_date, med_mrp, med_rate, status, added_by) values (?,?,?,?,?,?,?,?,?,?)", queryParam, (err, result, fields) => {
             console.log
@@ -412,7 +414,7 @@ app.post('/post-medicine', (req, res) => {
 
 app.post('/logout', (req, res) => {
   try {
-    delete session[req.body.secretKey];
+    delete session[req.headers.authorization];
   } catch (err) {
 
   }
@@ -427,20 +429,20 @@ app.get('/', function (req, res) {
 });
 
 app.post('/update-last-accessed', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "failed",
       message: "authentication failed"
     })
     return;
   }
-  connection.query('update users set last_accessed = ? where username = ? and pharmacy_name = ?', [req.body.lastAccessedScreen, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('update users set last_accessed = ? where username = ? and pharmacy_name = ?', [req.body.lastAccessedScreen, session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
     res.send({ message: "success" })
   });
 })
 
 app.post('/get-user-details', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
@@ -469,7 +471,7 @@ app.post('/get-user-details', (req, res) => {
 })
 
 app.post('/get-search-medicines', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send([])
     return;
   }
@@ -502,14 +504,14 @@ app.post('/get-search-medicines', (req, res) => {
 });
 
 app.post('/get-cart-items', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('select medname, quantity, price, mid from cartitems where username = ? and is_ordered = 0', [session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select medname, quantity, price, mid from cartitems where username = ? and is_ordered = 0', [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
     if (!result || (result.length === 0)) {
       res.status(200).send([]);
       return;
@@ -530,14 +532,14 @@ app.post('/get-cart-items', (req, res) => {
 })
 
 app.post('/update-pass', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('select username, password, email from users where username = ?', [session[req.body.secretKey].username], async (err, result, fields) => {
+  connection.query('select username, password, email from users where username = ?', [session[req.headers.authorization].username], async (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -568,7 +570,7 @@ app.post('/update-pass', (req, res) => {
       }
       else {
         const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
-        connection.query('update users set password = ? where username = ?', [hashedPassword, session[req.body.secretKey].username], (err, result, fields) => {
+        connection.query('update users set password = ? where username = ?', [hashedPassword, session[req.headers.authorization].username], (err, result, fields) => {
           if (err) {
             res.status(200).send({
               status: "error",
@@ -726,40 +728,40 @@ app.post("/security/generate-email", (req, res) => {
 app.post("/forgot-pass-change", async (req, res) => {
 try {
   let date = new Date();
-  if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
-    if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
-      delete otpRecords[req.body.secretKey];
+  if (otpRecords[req.headers.authorization].minute > date.getMinutes()) {
+    if (date.getMinutes + (60 - otpRecords[req.headers.authorization].minute) > 5) {
+      delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
         message: "OTP expired"
       })
       return;
     }
-  } else if (!req.body.secretKey || !otpRecords[req.body.secretKey]) {
-    delete otpRecords[req.body.secretKey];
+  } else if (!req.headers.authorization || !otpRecords[req.headers.authorization]) {
+    delete otpRecords[req.headers.authorization];
     res.status(200).send({
       status: "error",
       message: "OTP expired"
     })
     return;
   }
-  else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
-    delete otpRecords[req.body.secretKey];
+  else if (!otpRecords[req.headers.authorization] || !otpRecords[req.headers.authorization].mail) {
+    delete otpRecords[req.headers.authorization];
     res.status(200).send({
       status: "error",
       message: "Verify your email..."
     })
     return;
   } 
-  else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
-    if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
+  else if (otpRecords[req.headers.authorization].minute < date.getMinutes()) {
+    if (date.getMinutes() - otpRecords[req.headers.authorization].minute > 5) {
       res.status(200).send({
         status: "error",
         message: "OTP expired"
       })
       return;
     }
-  } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
+  } else if (otpRecords[req.headers.authorization].otp !== req.body.otp) {
       res.status(200).send({
         status: "error",
         message: "Invalid OTP"
@@ -779,7 +781,7 @@ try {
 
           var mailOptions = {
             from: 'PharmSimple <security-alert@pharmsimple.com>',
-            to: otpRecords[req.body.secretKey].mail,
+            to: otpRecords[req.headers.authorization].mail,
             subject: 'Security Alert',
             text: 'Your PharmSimple Account Password has been Changed',
           };
@@ -796,7 +798,7 @@ try {
             }
           });
 
-          delete otpRecords[req.body.secretKey];
+          delete otpRecords[req.headers.authorization];
 
           res.status(200).send({
             status: "success",
@@ -814,14 +816,14 @@ try {
 })
 
 app.post("/update-user-details", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username || session[req.body.secretKey].username !== req.body.username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username || session[req.headers.authorization].username !== req.body.username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  var queryParam = [req.body.email, req.body.mobileNumber, req.body.branchId, session[req.body.secretKey].username];
+  var queryParam = [req.body.email, req.body.mobileNumber, req.body.branchId, session[req.headers.authorization].username];
   connection.query('update users set email = ?, mobile_number = ?, branch_id = ?  where username = ?', queryParam, (err, result, fields) => {
     if (err) {
       res.status(200).send({
@@ -846,14 +848,14 @@ app.post("/update-user-details", (req, res) => {
 })
 
 app.post("/get-reports", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('select * from reports where username in (select u.username from users u where pharmacy_name = (select uu.pharmacy_name from users uu where username = ?)) order by reported_date desc', [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('select * from reports where username in (select u.username from users u where pharmacy_name = (select uu.pharmacy_name from users uu where username = ?)) order by reported_date desc', [session[req.headers.authorization].username], (err, result, fields) => {
     let data = [];
     let count = 1;
     if (!result || (result.length === 0)) {
@@ -875,14 +877,14 @@ app.post("/get-reports", (req, res) => {
 });
 
 app.post("/post-report", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  var queryParam = [session[req.body.secretKey].username, session[req.body.secretKey].role, req.body.reportTitle, req.body.reportSubject, req.body.reportDesc];
+  var queryParam = [session[req.headers.authorization].username, session[req.headers.authorization].role, req.body.reportTitle, req.body.reportSubject, req.body.reportDesc];
   connection.query('insert into reports (username, role, report_title, report_subject, report_desc, reported_date) values (?,?,?,?,?,NOW())', queryParam, (err, result, fields) => {
     if (err) {
       res.status(200).send({
@@ -900,14 +902,14 @@ app.post("/post-report", (req, res) => {
 })
 
 app.post('/get-cart-items-count', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('select count(username) as total from cartitems where username = ? and is_ordered = 0', [session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select count(username) as total from cartitems where username = ? and is_ordered = 0', [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
     res.status(200).send({
       cartSize: result[0].total,
       message: 'success'
@@ -916,16 +918,16 @@ app.post('/get-cart-items-count', (req, res) => {
 })
 
 app.post('/update-cart-items', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('update cartitems set quantity = ? where username = ? and mid = ?', [req.body.newQuantity, session[req.body.secretKey].username, req.body.mid], (err, result, fields) => {
+  connection.query('update cartitems set quantity = ? where username = ? and mid = ?', [req.body.newQuantity, session[req.headers.authorization].username, req.body.mid], (err, result, fields) => {
     if(err) {
-      console.log(session[req.body.secretKey].username + " - Error : " + err);
+      console.log(session[req.headers.authorization].username + " - Error : " + err);
       res.status(500).send({
         status : "failed",
         message : "Error"
@@ -941,16 +943,16 @@ app.post('/update-cart-items', (req, res) => {
 })
 
 app.post('/delete-cart-items', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('delete from cartitems where username = ? and mid = ?', [session[req.body.secretKey].username, req.body.mid], (err, result, fields) => {
+  connection.query('delete from cartitems where username = ? and mid = ?', [session[req.headers.authorization].username, req.body.mid], (err, result, fields) => {
     if(err) {
-      console.log(session[req.body.secretKey].username + " - Error : " + err);
+      console.log(session[req.headers.authorization].username + " - Error : " + err);
       res.status(500).send({
         status : "failed",
         message : "Error"
@@ -966,14 +968,14 @@ app.post('/delete-cart-items', (req, res) => {
 })
 
 app.post('/get-invoices', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  connection.query('select * from invoices where username = ? order by invoice_date desc', [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('select * from invoices where username = ? order by invoice_date desc', [session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       console.log(err);
     }
@@ -984,7 +986,7 @@ app.post('/get-invoices', (req, res) => {
     let resp = [];
     result.map((data) => {
       resp.push({
-        username: session[req.body.secretKey].username,
+        username: session[req.headers.authorization].username,
         pharmName: data.pharm_name,
         branch: data.branch,
         quantity: data.quantity,
@@ -997,14 +999,14 @@ app.post('/get-invoices', (req, res) => {
 })
 
 app.post('/post-invoice', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  var queryParam = [session[req.body.secretKey].username, req.body.pharmName, req.body.branch, req.body.quantity, req.body.amount];
+  var queryParam = [session[req.headers.authorization].username, req.body.pharmName, req.body.branch, req.body.quantity, req.body.amount];
   connection.query('insert into invoices set username = ?, pharm_name = ?, branch = ?, quantity = ?, amount = ?, invoice_date = now()', queryParam, (err, result, fields) => {
     if (err) {
       res.status(200).send({
@@ -1022,7 +1024,7 @@ app.post('/post-invoice', (req, res) => {
 })
 
 app.post('/get-delivery-men-details', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
@@ -1030,7 +1032,7 @@ app.post('/get-delivery-men-details', (req, res) => {
     return;
   }
   var query = 'select * from delivery_men where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ? ))';
-  connection.query(query, [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query(query, [session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1059,14 +1061,14 @@ app.post('/get-delivery-men-details', (req, res) => {
 })
 
 app.post('/post-delivery-man-details', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
     })
     return;
   }
-  var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy];
+  var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.headers.authorization].username, session[req.headers.authorization].pharmacy];
   connection.query('insert into delivery_men set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?, pharmacy_name = ?', queryParam, async (err, result, fields) => {
     if (err) {
       res.status(200).send({
@@ -1076,7 +1078,7 @@ app.post('/post-delivery-man-details', (req, res) => {
     }
     else {
       const hashedPassword = await bcrypt.hash("deliveryman", 10);
-      var queryParam1 = [req.body.name, hashedPassword, req.body.mobileNumber, session[req.body.secretKey].username, req.body.email, session[req.body.secretKey].username, '[12]', session[req.body.secretKey].pharmacy,1,session[req.body.secretKey].pharmacy,1];
+      var queryParam1 = [req.body.name, hashedPassword, req.body.mobileNumber, session[req.headers.authorization].username, req.body.email, session[req.headers.authorization].username, '[12]', session[req.headers.authorization].pharmacy,1,session[req.headers.authorization].pharmacy,1];
       connection.query('insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)', queryParam1, (err1, result1, fields1) => {
         if (err1) {
           console.log(err1);
@@ -1097,12 +1099,12 @@ app.post('/post-delivery-man-details', (req, res) => {
 })
 
 app.post('/get-pharmacists-details', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send([])
     return;
   }
   var query = 'select * from pharmacists where added_by = ?';
-  connection.query(query, [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query(query, [session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -1130,7 +1132,7 @@ app.post('/get-pharmacists-details', (req, res) => {
 })
 
 app.post('/post-pharmacist-details', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
@@ -1150,7 +1152,7 @@ app.post('/post-pharmacist-details', (req, res) => {
         message: "Username already exists"
       })
     } else {
-      var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
+      var queryParam = [req.body.name, req.body.email, req.body.mobileNumber, req.body.address, req.body.aadhar, session[req.headers.authorization].username, session[req.headers.authorization].pharmacy, 1,session[req.headers.authorization].pharmacy, 1];
       connection.query('insert into pharmacists set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?', queryParam, async (err, result, fields) => {
         if (err) {
           res.status(200).send({
@@ -1160,7 +1162,7 @@ app.post('/post-pharmacist-details', (req, res) => {
         }
         else {
           const hashedPassword = await bcrypt.hash("pharmacist", 10);
-          var queryParam1 = [req.body.name, hashedPassword, 3, 11, req.body.email, session[req.body.secretKey].username, session[req.body.secretKey].username, req.body.mobileNumber, '[11]',session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
+          var queryParam1 = [req.body.name, hashedPassword, 3, 11, req.body.email, session[req.headers.authorization].username, session[req.headers.authorization].username, req.body.mobileNumber, '[11]',session[req.headers.authorization].pharmacy, 1,session[req.headers.authorization].pharmacy, 1];
           connection.query('insert into users (username, password, role,last_accessed, email,pharmacy_name,branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,?,?,?,(select u.pharmacy_name from users u where username = ?),(select u.branch_id from users u where username = ?),?,?, (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?))', queryParam1, (err1, result1, fields1) => {
             if (err1) {
               console.log(err1);
@@ -1184,7 +1186,7 @@ app.post('/post-pharmacist-details', (req, res) => {
 
 
 app.post('/add-to-cart', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed"
@@ -1192,7 +1194,7 @@ app.post('/add-to-cart', (req, res) => {
     return;
   }
   let query = 'select count(*) as total from cartitems where username = ? and medname = ? and is_ordered = 0 and mid = ?';
-  let queryParam = [session[req.body.secretKey].username, req.body.medName, req.body.mid];
+  let queryParam = [session[req.headers.authorization].username, req.body.medName, req.body.mid];
 
   connection.query(query, queryParam, (err, result, fields) => {
     if (err) {
@@ -1209,7 +1211,7 @@ app.post('/add-to-cart', (req, res) => {
       })
     }
     else {      
-        connection.query('insert into cartitems (mid, username, medname, quantity, price,pharm_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))', [req.body.mid, session[req.body.secretKey].username, req.body.medName,req.body.quantity, req.body.mid, req.body.medName], (err2, result2, fields2) => {
+        connection.query('insert into cartitems (mid, username, medname, quantity, price,pharm_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))', [req.body.mid, session[req.headers.authorization].username, req.body.medName,req.body.quantity, req.body.mid, req.body.medName], (err2, result2, fields2) => {
           if (err2) {
             console.log(err2);
             res.status(200).send({
@@ -1229,7 +1231,7 @@ app.post('/add-to-cart', (req, res) => {
 })
 
 app.get('/get-created-pharmacies', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
@@ -1250,7 +1252,7 @@ app.get('/get-created-pharmacies', (req, res) => {
 })
 
 app.post('/get-users', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
@@ -1258,7 +1260,7 @@ app.post('/get-users', (req, res) => {
     })
     return;
   }
-  else if (session[req.body.secretKey].role !== 1) {
+  else if (session[req.headers.authorization].role !== 1) {
     res.status(200).send({
       status: "error",
       message: "Authorization Failed"
@@ -1266,7 +1268,7 @@ app.post('/get-users', (req, res) => {
     return;
   }
   let searchPattern = '%' + req.body.search + '%';
-  connection.query('select username from users where pharmacy_name = (select u.pharmacy_name from users u where u.username = ? ) and role <> 1 and username like ?', [session[req.body.secretKey].username, searchPattern], (err, result, fields) => {
+  connection.query('select username from users where pharmacy_name = (select u.pharmacy_name from users u where u.username = ? ) and role <> 1 and username like ?', [session[req.headers.authorization].username, searchPattern], (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -1294,7 +1296,7 @@ app.post('/get-users', (req, res) => {
 })
 
 app.post('/get-user-previleges', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
@@ -1302,7 +1304,7 @@ app.post('/get-user-previleges', (req, res) => {
     })
     return;
   }
-  if (session[req.body.secretKey].role !== 1) {
+  if (session[req.headers.authorization].role !== 1) {
     res.status(200).send({
       status: "error",
       message: "Authorization Failed"
@@ -1327,7 +1329,7 @@ app.post('/get-user-previleges', (req, res) => {
 })
 
 app.post('/update-user-previleges', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
@@ -1335,7 +1337,7 @@ app.post('/update-user-previleges', (req, res) => {
     })
     return;
   }
-  else if (session[req.body.secretKey].role !== 1) {
+  else if (session[req.headers.authorization].role !== 1) {
     res.status(200).send({
       status: "error",
       message: "Authorization Failed"
@@ -1365,14 +1367,14 @@ app.post('/update-user-previleges', (req, res) => {
 });
 
 app.post("/get-managers", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('select * from managers where pharmacy_name = (select u.pharmacy_name from users u where u.username = ?) ', [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('select * from managers where pharmacy_name = (select u.pharmacy_name from users u where u.username = ?) ', [session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1400,14 +1402,14 @@ app.post("/get-managers", (req, res) => {
 })
 
 app.post("/post-new-manager", async (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  else if (session[req.body.secretKey].role !== 1) {
+  else if (session[req.headers.authorization].role !== 1) {
     res.status(200).send({
       status: "error",
       message: "Authorization Failed"
@@ -1415,7 +1417,7 @@ app.post("/post-new-manager", async (req, res) => {
     return;
   }
   const hashedPassword = await bcrypt.hash(req.body.password,10);
-  var queryParam1 = [req.body.username, hashedPassword, req.body.email, session[req.body.secretKey].username, req.body.branch, req.body.mobileNumber, session[req.body.secretKey].pharmacy, 1,session[req.body.secretKey].pharmacy, 1];
+  var queryParam1 = [req.body.username, hashedPassword, req.body.email, session[req.headers.authorization].username, req.body.branch, req.body.mobileNumber, session[req.headers.authorization].pharmacy, 1,session[req.headers.authorization].pharmacy, 1];
   connection.query("insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]', (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))", queryParam1, (err1, result1, fields1) => {
     if (err1) {
       console.log(err1);
@@ -1425,7 +1427,7 @@ app.post("/post-new-manager", async (req, res) => {
       })
     }
     else {
-      var queryParam = [req.body.username, hashedPassword, req.body.email, req.body.username, req.body.address, session[req.body.secretKey].username];
+      var queryParam = [req.body.username, hashedPassword, req.body.email, req.body.username, req.body.address, session[req.headers.authorization].username];
       connection.query('insert into managers (username, password, email, branch_id, address, pharmacy_name) values (?,?,?,(select u.branch_id from users u where u.username = ?),?, (select uuu.pharmacy_name from users uuu where uuu.username = ?))', queryParam, (err, result, fields) => {
         if (err) {
           console.log(err);
@@ -1447,14 +1449,14 @@ app.post("/post-new-manager", async (req, res) => {
 })
 
 app.post("/get-dashboard-details", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('select (select count(*) from managers where pharmacy_name = (select u.pharmacy_name from users u where username = ?)) as managers_count, (select count(*) from pharmacists where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as pharmacists_count, (select count(*) from delivery_men where pharmacy_name = ?) as delivery_men_count, (select count(*) from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as medicines_count', [session[req.body.secretKey].username, session[req.body.secretKey].username, session[req.body.secretKey].pharmacy, session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('select (select count(*) from managers where pharmacy_name = (select u.pharmacy_name from users u where username = ?)) as managers_count, (select count(*) from pharmacists where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as pharmacists_count, (select count(*) from delivery_men where pharmacy_name = ?) as delivery_men_count, (select count(*) from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as medicines_count', [session[req.headers.authorization].username, session[req.headers.authorization].username, session[req.headers.authorization].pharmacy, session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1483,14 +1485,14 @@ app.post("/get-dashboard-details", (req, res) => {
 })
 
 app.post('/get-ordered-items-for-approval', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('select * from cartitems where is_ordered = 1 and pharm_name = ?', [session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select * from cartitems where is_ordered = 1 and pharm_name = ?', [session[req.headers.authorization].pharmacy], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1518,7 +1520,7 @@ app.post('/get-ordered-items-for-approval', (req, res) => {
 })
 
 app.post('/approve-order', (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
@@ -1558,14 +1560,14 @@ app.post('/approve-order', (req, res) => {
 })
 
 app.post("/decline-orders", (req,res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  else if(session[req.body.secretKey].role !== 3) {
+  else if(session[req.headers.authorization].role !== 3) {
     res.status(200).send({
       status: "error",
       message: "Authorization Failed",
@@ -1598,14 +1600,14 @@ app.post("/decline-orders", (req,res) => {
 })
 
 app.post("/make-order", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('update cartitems set is_ordered = 1 where username = ? and is_ordered = 0', [session[req.body.secretKey].username], (err, result, fields) => {
+  connection.query('update cartitems set is_ordered = 1 where username = ? and is_ordered = 0', [session[req.headers.authorization].username], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1623,14 +1625,14 @@ app.post("/make-order", (req, res) => {
 })
 
 app.post("/get-approved-items", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('select a.username, a.medname, a.quantity, u.mobile_number from approved_items a inner join users u on a.username = u.username where a.delivery_man = ? and a.pharmacy_name = ? and a.is_delivered = 0', ["NOT_ALLOCATED", session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select a.username, a.medname, a.quantity, u.mobile_number from approved_items a inner join users u on a.username = u.username where a.delivery_man = ? and a.pharmacy_name = ? and a.is_delivered = 0', ["NOT_ALLOCATED", session[req.headers.authorization].pharmacy], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1658,14 +1660,14 @@ app.post("/get-approved-items", (req, res) => {
 })
 
 app.post("/pickup-order", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('update approved_items set delivery_man = ? where username = ? and medname = ? and pharmacy_name = ?', [session[req.body.secretKey].username, req.body.username, req.body.medName, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('update approved_items set delivery_man = ? where username = ? and medname = ? and pharmacy_name = ?', [session[req.headers.authorization].username, req.body.username, req.body.medName, session[req.headers.authorization].pharmacy], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1683,14 +1685,14 @@ app.post("/pickup-order", (req, res) => {
 })
 
 app.post("/get-orders", (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(200).send({
       status: "error",
       message: "Authentication Failed",
     })
     return;
   }
-  connection.query('select a.username, a.medname, a.quantity, u.mobile_number from approved_items a inner join users u on a.username = u.username where a.delivery_man = ? and a.pharmacy_name = ? and a.is_delivered = 0', [session[req.body.secretKey].username, session[req.body.secretKey].pharmacy], (err, result, fields) => {
+  connection.query('select a.username, a.medname, a.quantity, u.mobile_number from approved_items a inner join users u on a.username = u.username where a.delivery_man = ? and a.pharmacy_name = ? and a.is_delivered = 0', [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(200).send({
@@ -1718,12 +1720,12 @@ app.post("/get-orders", (req, res) => {
 })
 
 app.post("/payment/orders", async (req, res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(500).send("Unauthorized");
     return;
   }
-  console.log('username : ',session[req.body.secretKey].username);
-  connection.query('select medname, quantity, price from cartitems where username = ? and is_ordered = 0', [session[req.body.secretKey].username], async (err, result, fields) => {
+  console.log('username : ',session[req.headers.authorization].username);
+  connection.query('select medname, quantity, price from cartitems where username = ? and is_ordered = 0', [session[req.headers.authorization].username], async (err, result, fields) => {
     if (err) {
       console.log(err);
       res.status(500).send("Some error occured")
@@ -1771,7 +1773,7 @@ app.post("/payment/success", (req,res) => {
 })
 
 app.post('/payment/subscription', async (req,res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(500).send("Unauthorized");
     return;
   }
@@ -1802,14 +1804,14 @@ app.post('/payment/subscription', async (req,res) => {
 })
 
 app.post("/activate-subscription", (req,res) => {
-  if (!req.body.secretKey || !session[req.body.secretKey] || !session[req.body.secretKey].username) {
+  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
     res.status(500).send({
       status : "failed",
       message : "Unauthorized"
     });
     return;
   } else {
-    connection.query('update users set subscription_pack = ?, date_of_subscription = now() where pharmacy_name = ?', [req.body.subscriptionType,session[req.body.secretKey].pharmacy], (err, result, fields) => {
+    connection.query('update users set subscription_pack = ?, date_of_subscription = now() where pharmacy_name = ?', [req.body.subscriptionType,session[req.headers.authorization].pharmacy], (err, result, fields) => {
       if (err) {
         console.log(err);
         res.status(500).send({
