@@ -19,7 +19,7 @@ var transporter = nodemailer.createTransport({
 });
 
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.CLIENT_BASE_URL,
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
   credentials : false,
   exposedHeaders: [process.env.AUTH_NAME],
