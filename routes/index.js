@@ -231,7 +231,7 @@ app.post('/new-user', (req, res) => {
       })
 
     }
-    else if (!otpRecords[req.headers.newUserAuth] || !otpRecords[req.headers.newUserAuth].mail) {
+    else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
       console.error("otp not found");
       res.status(200).send({
         status: "error",
@@ -239,34 +239,34 @@ app.post('/new-user', (req, res) => {
       })
       return;
     } 
-    else if (otpRecords[req.headers.newUserAuth].mail !== req.body.email) {
+    else if (otpRecords[req.body.secretKey].mail !== req.body.email) {
       console.error("email is not the same");
-      delete otpRecords[req.headers.newUserAuth];
+      delete otpRecords[req.body.secretKey];
       res.status(200).send({
         status: "error",
         message: "Email Mismatch..."
       })
       return;
     }
-    else if (otpRecords[req.headers.newUserAuth].minute > date.getMinutes()) {
-      if (date.getMinutes + (60 - otpRecords[req.headers.newUserAuth].minute) > 5) {
-        delete otpRecords[req.headers.newUserAuth];
+    else if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
+      if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
+        delete otpRecords[req.body.secretKey];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.headers.newUserAuth].minute < date.getMinutes()) {
-      if (date.getMinutes() - otpRecords[req.headers.newUserAuth].minute > 5) {
-        delete otpRecords[req.headers.newUserAuth];
+    } else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
+      if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
+        delete otpRecords[req.body.secretKey];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.headers.newUserAuth].otp !== req.body.otp) {
+    } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
         res.status(200).send({
           status: "error",
           message: "Invalid OTP"
@@ -286,7 +286,7 @@ app.post('/new-user', (req, res) => {
           try {
             var mailOptions = {
               from: 'PharmSimple <security-alert@pharmsimple.com>',
-              to: otpRecords[req.headers.newUserAuth].mail,
+              to: otpRecords[req.body.secretKey].mail,
               subject: 'Congratulations',
               text: 'Your PharmSimple ' + (req.body.pharmacyName === "" ? "" : "Management ") + 'Account has been Created Successfully',
             };
@@ -303,7 +303,7 @@ app.post('/new-user', (req, res) => {
               }
             });
 
-            delete otpRecords[req.headers.newUserAuth];
+            delete otpRecords[req.body.secretKey];
 
             res.status(200).send({
               status: 'success',
