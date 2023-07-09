@@ -1,3 +1,7 @@
+CREATE DATABASE pharmacy_management;
+
+USE pharmacy_management;
+
 CREATE TABLE delivery_men (username varchar(256), email varchar(256), mobile_number varchar(256), address varchar(256), aadhar_number varchar(256), added_by varchar(256), pharmacy_name varchar(256));
 
 CREATE TABLE invoices (username  varchar(256), pharm_name  varchar(256), branch int, amount  varchar(15), quantity  varchar(20), invoice_date date);

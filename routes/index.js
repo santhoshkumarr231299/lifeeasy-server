@@ -1,6 +1,8 @@
 var express = require('express');
 var app = express();
-var cors = require('cors');
+const superApi = require("./superapi");
+const chatBot = require("./chatBot");
+var cors = require("cors");
 const { v4: uuidv4 } = require('uuid');
 var mysql = require('mysql');
 const mysql2 = require('mysql2')
@@ -25,16 +27,19 @@ app.use(cors({
   exposedHeaders: [process.env.AUTH_NAME],
 }))
 
-// var connection = mysql.createPool({
-//   connectionLimit : 10,
-//   port : 3306,
-//   host: 'localhost',
-//   user: 'root',
-//   password: '#' + process.env.DB_LOCAL_PASSWORD,
-//   database: 'pharmacy_management'
-// })
+app.use(process.env.CHAT_BASE_PATH, chatBot);
+app.use(process.env.SUPER_API_BASE_PATH, superApi);
 
-var connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
+var connection = mysql.createPool({
+  connectionLimit : process.env.DB_LOCAL_CON_LIMMIT,
+  port : process.env.DB_LOCAL_PORT,
+  host: process.env.DB_LOCAL_HOST,
+  user: process.env.DB_LOCAL_USER,
+  password: '#' + process.env.DB_LOCAL_PASSWORD,
+  database: process.env.DB_LOCAL_DBNAME
+})
+
+// var connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
 
 // var connection = mysql.createPool({
 //   connectionLimit : 10,
@@ -50,7 +55,7 @@ var session = new Map();
 var otpRecords = new Map();
 
 
-schdule.scheduleJob('0 * * * *', () => {
+schdule.scheduleJob('0 * * * *', () => { // at 12.00 am
   console.log("Deleting OTP Records...");
   for(let entry of Object.entries(otpRecords)) {
     delete otpRecords[entry[0]]; 
@@ -683,7 +688,7 @@ app.post("/security/generate-email", (req, res) => {
     if (!result || result.length === 0) {
       res.status(200).send({
         status: "error",
-        message: "Username does not exits"
+        message: "Username does not exists"
       })
       return;
     }
@@ -1770,6 +1775,7 @@ app.post("/payment/orders", async (req, res) => {
 app.post("/payment/success", (req,res) => {
   console.log("Payment successfull : " + req.body.razorpayPaymentId);
   res.send({
+    status : "success",
     message : "Payment successful"
   })
 })
