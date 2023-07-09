@@ -24,7 +24,7 @@ app.use(cors({
   origin: process.env.CLIENT_BASE_URL,
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
   credentials : false,
-  exposedHeaders: [process.env.AUTH_NAME],
+  exposedHeaders: [process.env.AUTH_NAME, process.env.NEW_USER_AUTH_KEY],
 }))
 
 app.use(process.env.CHAT_BASE_PATH, chatBot);
@@ -170,7 +170,6 @@ app.post('/login', (req, res) => {
                 role: result[0].role,
                 lastAccessedScreen: result[0].last_accessed,
                 pharmacy: result[0].pharmacy_name,
-                secretKey: secretKey,
                 subscriptionPack : result[0].subscription_pack,
                 DateOfSubscription : result[0].date_of_subscription,
                 message: 'success'
@@ -236,7 +235,7 @@ app.post('/new-user', (req, res) => {
       })
 
     }
-    else if (!otpRecords[req.body.secretKey] || !otpRecords[req.body.secretKey].mail) {
+    else if (!otpRecords[req.headers.__auth] || !otpRecords[req.headers.__auth].mail) {
       console.error("otp not found");
       res.status(200).send({
         status: "error",
@@ -244,34 +243,34 @@ app.post('/new-user', (req, res) => {
       })
       return;
     } 
-    else if (otpRecords[req.body.secretKey].mail !== req.body.email) {
+    else if (otpRecords[req.headers.__auth].mail !== req.body.email) {
       console.error("email is not the same");
-      delete otpRecords[req.body.secretKey];
+      delete otpRecords[req.headers.__auth];
       res.status(200).send({
         status: "error",
         message: "Email Mismatch..."
       })
       return;
     }
-    else if (otpRecords[req.body.secretKey].minute > date.getMinutes()) {
-      if (date.getMinutes + (60 - otpRecords[req.body.secretKey].minute) > 5) {
-        delete otpRecords[req.body.secretKey];
+    else if (otpRecords[req.headers.__auth].minute > date.getMinutes()) {
+      if (date.getMinutes + (60 - otpRecords[req.headers.__auth].minute) > 5) {
+        delete otpRecords[req.headers.__auth];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.body.secretKey].minute < date.getMinutes()) {
-      if (date.getMinutes() - otpRecords[req.body.secretKey].minute > 5) {
-        delete otpRecords[req.body.secretKey];
+    } else if (otpRecords[req.headers.__auth].minute < date.getMinutes()) {
+      if (date.getMinutes() - otpRecords[req.headers.__auth].minute > 5) {
+        delete otpRecords[req.headers.__auth];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.body.secretKey].otp !== req.body.otp) {
+    } else if (otpRecords[req.headers.__auth].otp !== req.body.otp) {
         res.status(200).send({
           status: "error",
           message: "Invalid OTP"
@@ -291,7 +290,7 @@ app.post('/new-user', (req, res) => {
           try {
             var mailOptions = {
               from: 'PharmSimple <security-alert@pharmsimple.com>',
-              to: otpRecords[req.body.secretKey].mail,
+              to: otpRecords[req.headers.__auth].mail,
               subject: 'Congratulations',
               text: 'Your PharmSimple ' + (req.body.pharmacyName === "" ? "" : "Management ") + 'Account has been Created Successfully',
             };
@@ -308,7 +307,7 @@ app.post('/new-user', (req, res) => {
               }
             });
 
-            delete otpRecords[req.body.secretKey];
+            delete otpRecords[req.headers.__auth];
 
             res.status(200).send({
               status: 'success',
@@ -661,10 +660,10 @@ app.post("/security/verify-email", (req, res) => {
           return;
         } else {
           console.log('Email sent: ' + req.body.email);
+          res.setHeader(process.env.NEW_USER_AUTH_KEY, secretKey);
           res.status(200).send({
             status: "success",
             message: "OTP has been sent to the Mail if exists...",
-            secretKey: secretKey,
           })
         }
       });
