@@ -14,7 +14,7 @@ CREATE TABLE pharmacists (username varchar(256), email varchar(256), mobile_numb
 
 CREATE TABLE reports (username varchar(256), role int, report_title varchar(256), report_subject varchar(256), report_desc varchar(256), reported_date date);
 
-CREATE TABLE users (username varchar(256), password varchar(256), role int, role_desc varchar(256), last_accessed int default 1, email varchar(256), pharmacy_name varchar(256), branch_id int(10), mobile_number varchar(15), have_access_to varchar(256), subscription_pack varchar(256) default 'none', date_of_subscription date);
+CREATE TABLE users (username varchar(256), password varchar(256), status int(1) default 1, role int, role_desc varchar(256), last_accessed int default 1, email varchar(256), pharmacy_name varchar(256), branch_id int(10), mobile_number varchar(15), have_access_to varchar(256), subscription_pack varchar(256) default 'none', date_of_subscription date);
 
 CREATE TABLE approved_items (mid varchar(256), username varchar(256), medname varchar(256), quantity varchar(256), price varchar(256), pharmacy_name varchar(256), delivery_man varchar(256) default 'NOT_ALLOCATED', is_delivered int default 0);
 

@@ -35,7 +35,7 @@ var connection = mysql.createPool({
   port : process.env.DB_LOCAL_PORT,
   host: process.env.DB_LOCAL_HOST,
   user: process.env.DB_LOCAL_USER,
-  password: '#' + process.env.DB_LOCAL_PASSWORD,
+  password: process.env.DB_LOCAL_PASSWORD,
   database: process.env.DB_LOCAL_DBNAME
 })
 
@@ -129,7 +129,7 @@ app.post('/logged-in', (req, res) => {
       })
       return;
     }
-    connection.query("select * from users where username = ?", [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
+    connection.query("select * from users where username = ?  and status = 1", [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy], (err, result, fields) => {
       if (result && result.length === 1) {
         res.status(200).send({
           username: session[req.headers.authorization].username,
@@ -158,7 +158,7 @@ app.post('/logged-in', (req, res) => {
 
 app.post('/login', (req, res) => {
   try {
-    connection.query('select * from users where username = ?', [req.body.username], async (err, result, fields) => {
+    connection.query('select * from users where username = ?  and status = 1', [req.body.username], async (err, result, fields) => {
       if (result && result.length == 1) {
         let username = result[0].username;
         let password = result[0].password;
@@ -1317,7 +1317,7 @@ app.post('/get-user-previleges', (req, res) => {
     })
     return;
   }
-  connection.query('select have_access_to from users where username = ?', [req.body.username], (err, result, fields) => {
+  connection.query('select have_access_to, status from users where username = ?', [req.body.username], (err, result, fields) => {
     if (err) {
       res.status(200).send({
         status: "error",
@@ -1329,47 +1329,65 @@ app.post('/get-user-previleges', (req, res) => {
         status: "success",
         message: "User Previlges",
         userPrevileges: result[0].have_access_to,
+        userStatus : result[0].status == 1 ? true : false
       })
     }
   });
 })
 
 app.post('/update-user-previleges', (req, res) => {
-  if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
-    res.status(200).send({
-      status: "error",
-      message: "Authentication Failed",
-      pharmacies: [],
-    })
-    return;
-  }
-  else if (session[req.headers.authorization].role !== 1) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed"
-    })
-    return;
-  }
-  connection.query('update users set have_access_to = ?, last_accessed = ? where username = ?', [req.body.userPrevileges, req.body.lastAccessedScreen, req.body.username], (err, result, fields) => {
-    if (err) {
+  try {
+    if (!req.headers.authorization || !session[req.headers.authorization] || !session[req.headers.authorization].username) {
       res.status(200).send({
         status: "error",
-        message: "Something went wrong",
+        message: "Authentication Failed",
+        pharmacies: [],
       })
+      return;
     }
-    else if (result.changedRows == 0) {
+    else if (session[req.headers.authorization].role !== 1) {
       res.status(200).send({
-        status: "warning",
-        message: "User Previleges are the same before"
+        status: "error",
+        message: "Authorization Failed"
       })
+      return;
     }
-    else {
-      res.status(200).send({
-        status: "success",
-        message: "User Previleges Updated successfully"
-      })
+    let query;
+    let list;
+    if(req.body.userStatus) {
+      query = "update users set have_access_to = ?, last_accessed = ?, status = 1 where username = ?";
+      list = [req.body.userPrevileges, req.body.lastAccessedScreen, req.body.username];
+    } else {
+      query = "update users set status = 0 where username = ?";
+      list = [req.body.username];
     }
+    connection.query(query, list, (err, result, fields) => {
+      if (err) {
+        res.status(200).send({
+          status: "error",
+          message: "Something went wrong",
+        })
+      }
+      else if (result.changedRows == 0) {
+        res.status(200).send({
+          status: "warning",
+          message: "User Previleges are the same before"
+        })
+      }
+      else {
+        res.status(200).send({
+          status: "success",
+          message: "User Previleges Updated successfully"
+        })
+      }
+    })
+} catch(e) {
+  console.error(e);
+  res.status(200).send({
+    status: "error",
+    message: "Something went wrong",
   })
+}
 });
 
 app.post("/get-managers", (req, res) => {
