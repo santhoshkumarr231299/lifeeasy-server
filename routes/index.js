@@ -64,10 +64,21 @@ schdule.scheduleJob('0 * * * *', () => { // at 12.00 am
 
 schdule.scheduleJob('0 3 * * *', () => {
   console.log("Deleting Sessions...");
-  for(let entry of Object.entries(session)) {
-    delete session[entry[0]];
+  for(let keyValue of Object.entries(session)) {
+    delete session[keyValue[0]];
   }
 });
+
+const deleteUserSession = (username) => {
+  if(session) {
+   for(const keyValue of Object.entries(session)) {
+    if(session[keyValue[0]].username == username) {
+      delete session[keyValue[0]];
+    }
+   }
+   console.log("Session deleted for the User : ", username);
+  }
+}
 
 app.use(function (req,res,next) {
   next();
@@ -585,6 +596,7 @@ app.post('/update-pass', (req, res) => {
 
           }
           else {
+            deleteUserSession(session[req.headers.authorization].username);
             var mailOptions = {
               from: 'PharmSimple <security-alert@pharmsimple.com>',
               to: email,
@@ -653,6 +665,7 @@ app.post("/security/verify-email", (req, res) => {
 
       transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
+          console.error(error);
           res.status(200).send({
             status: "error",
             message: "Enter a valid email"
@@ -712,6 +725,7 @@ app.post("/security/generate-email", (req, res) => {
 
       transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
+          console.log(error);
           res.status(200).send({
             status: "error",
             message: "User does not have a valid email"
@@ -1375,6 +1389,9 @@ app.post('/update-user-previleges', (req, res) => {
         })
       }
       else {
+        if(!req.body.userStatus) {
+          deleteUserSession(req.body.username);
+        }
         res.status(200).send({
           status: "success",
           message: "User Previleges Updated successfully"
