@@ -30,16 +30,19 @@ app.use(cors({
 app.use(process.env.CHAT_BASE_PATH, chatBot);
 app.use(process.env.SUPER_API_BASE_PATH, superApi);
 
-var connection = mysql.createPool({
-  connectionLimit : process.env.DB_LOCAL_CON_LIMMIT,
-  port : process.env.DB_LOCAL_PORT,
-  host: process.env.DB_LOCAL_HOST,
-  user: process.env.DB_LOCAL_USER,
-  password: process.env.DB_LOCAL_PASSWORD,
-  database: process.env.DB_LOCAL_DBNAME
-})
-
-// var connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
+var connection;
+if(process.env.PRODUCTION === 'false') {
+  connection = mysql.createPool({
+    connectionLimit : process.env.DB_LOCAL_CON_LIMMIT,
+    port : process.env.DB_LOCAL_PORT,
+    host: process.env.DB_LOCAL_HOST,
+    user: process.env.DB_LOCAL_USER,
+    password: process.env.DB_LOCAL_PASSWORD,
+    database: process.env.DB_LOCAL_DBNAME
+  })
+} else {
+  connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
+}
 
 // var connection = mysql.createPool({
 //   connectionLimit : 10,
