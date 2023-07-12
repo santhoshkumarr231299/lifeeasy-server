@@ -24,7 +24,7 @@ app.use(cors({
   origin: process.env.CLIENT_BASE_URL,
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
   credentials : false,
-  exposedHeaders: [process.env.AUTH_NAME, process.env.NEW_USER_AUTH_KEY],
+  exposedHeaders: [process.env.AUTH_NAME, process.env.NEW_USER_AUTH_KEY, process.env.FORGOT_PASS_CHANGE_AUTH],
 }))
 
 app.use(process.env.CHAT_BASE_PATH, chatBot);
@@ -238,15 +238,16 @@ app.post('/new-user', (req, res) => {
         status: "danger",
         message: "Something went wrong"
       })
+      return;
     }
     else if (result.length > 0) {
       res.status(200).send({
         status: "danger",
         message: "Username already exists"
       })
-
+      return;
     }
-    else if (!otpRecords[req.headers.__auth] || !otpRecords[req.headers.__auth].mail) {
+    else if (!otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]] || !otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].mail) {
       console.error("otp not found");
       res.status(200).send({
         status: "error",
@@ -254,34 +255,34 @@ app.post('/new-user', (req, res) => {
       })
       return;
     } 
-    else if (otpRecords[req.headers.__auth].mail !== req.body.email) {
+    else if (otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].mail !== req.body.email) {
       console.error("email is not the same");
-      delete otpRecords[req.headers.__auth];
+      delete otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]];
       res.status(200).send({
         status: "error",
         message: "Email Mismatch..."
       })
       return;
     }
-    else if (otpRecords[req.headers.__auth].minute > date.getMinutes()) {
-      if (date.getMinutes + (60 - otpRecords[req.headers.__auth].minute) > 5) {
-        delete otpRecords[req.headers.__auth];
+    else if (otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].minute > date.getMinutes()) {
+      if (date.getMinutes + (60 - otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].minute) > 5) {
+        delete otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.headers.__auth].minute < date.getMinutes()) {
-      if (date.getMinutes() - otpRecords[req.headers.__auth].minute > 5) {
-        delete otpRecords[req.headers.__auth];
+    } else if (otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].minute < date.getMinutes()) {
+      if (date.getMinutes() - otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].minute > 5) {
+        delete otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]];
         res.status(200).send({
           status: "error",
           message: "OTP expired"
         })
         return;
       }
-    } else if (otpRecords[req.headers.__auth].otp !== req.body.otp) {
+    } else if (otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].otp !== req.body.otp) {
         res.status(200).send({
           status: "error",
           message: "Invalid OTP"
@@ -301,7 +302,7 @@ app.post('/new-user', (req, res) => {
           try {
             var mailOptions = {
               from: 'PharmSimple <security-alert@pharmsimple.com>',
-              to: otpRecords[req.headers.__auth].mail,
+              to: otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]].mail,
               subject: 'Congratulations',
               text: 'Your PharmSimple ' + (req.body.pharmacyName === "" ? "" : "Management ") + 'Account has been Created Successfully',
             };
@@ -318,7 +319,7 @@ app.post('/new-user', (req, res) => {
               }
             });
 
-            delete otpRecords[req.headers.__auth];
+            delete otpRecords[req.headers[process.env.NEW_USER_AUTH_KEY]];
 
             res.status(200).send({
               status: 'success',
@@ -710,6 +711,7 @@ app.post("/security/generate-email", (req, res) => {
       const secretKey = uuidv4();
 
       otpRecords[secretKey] = {
+        username : req.body.username,
         mail: result[0].email,
         otp: Math.floor(Math.random() * 9000 + 1000).toString(),
         hour: date.getHours(),
@@ -733,10 +735,11 @@ app.post("/security/generate-email", (req, res) => {
           return;
         } else {
           console.log('Email sent: ' + result[0].email);
+          res.setHeader(process.env.FORGOT_PASS_CHANGE_AUTH, secretKey);
           res.status(200).send({
             status: "success",
             message: "OTP has been sent to the Associated Mail",
-            secretKey: secretKey,
+            // secretKey: secretKey,
           })
         }
       });
@@ -748,40 +751,40 @@ app.post("/security/generate-email", (req, res) => {
 app.post("/forgot-pass-change", async (req, res) => {
 try {
   let date = new Date();
-  if (otpRecords[req.headers.authorization].minute > date.getMinutes()) {
-    if (date.getMinutes + (60 - otpRecords[req.headers.authorization].minute) > 5) {
-      delete otpRecords[req.headers.authorization];
+  if (otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute > date.getMinutes()) {
+    if (date.getMinutes + (60 - otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute) > 5) {
+      delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
       res.status(200).send({
         status: "error",
         message: "OTP expired"
       })
       return;
     }
-  } else if (!req.headers.authorization || !otpRecords[req.headers.authorization]) {
-    delete otpRecords[req.headers.authorization];
+  } else if (!req.headers[process.env.FORGOT_PASS_CHANGE_AUTH] || !otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]]) {
+    delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
     res.status(200).send({
       status: "error",
       message: "OTP expired"
     })
     return;
   }
-  else if (!otpRecords[req.headers.authorization] || !otpRecords[req.headers.authorization].mail) {
-    delete otpRecords[req.headers.authorization];
+  else if (!otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]] || !otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].mail) {
+    delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
     res.status(200).send({
       status: "error",
       message: "Verify your email..."
     })
     return;
   } 
-  else if (otpRecords[req.headers.authorization].minute < date.getMinutes()) {
-    if (date.getMinutes() - otpRecords[req.headers.authorization].minute > 5) {
+  else if (otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute < date.getMinutes()) {
+    if (date.getMinutes() - otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute > 5) {
       res.status(200).send({
         status: "error",
         message: "OTP expired"
       })
       return;
     }
-  } else if (otpRecords[req.headers.authorization].otp !== req.body.otp) {
+  } else if (otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].otp !== req.body.otp) {
       res.status(200).send({
         status: "error",
         message: "Invalid OTP"
@@ -789,9 +792,10 @@ try {
       return;
   }else {
     const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
-      connection.query('update users set password = ? where username = ?', [hashedPassword, req.body.username], (err, result, fields) => {
+      connection.query('update users set password = ? where username = ?', [hashedPassword, otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].username], (err, result, fields) => {
 
         if (err) {
+          console.error(err);
           res.status(200).send({
             status: "error",
             message: "Something went wrong"
@@ -799,9 +803,11 @@ try {
         } 
         else {
 
+          deleteUserSession(otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].username);
+
           var mailOptions = {
             from: 'PharmSimple <security-alert@pharmsimple.com>',
-            to: otpRecords[req.headers.authorization].mail,
+            to: otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].mail,
             subject: 'Security Alert',
             text: 'Your PharmSimple Account Password has been Changed',
           };
@@ -818,7 +824,7 @@ try {
             }
           });
 
-          delete otpRecords[req.headers.authorization];
+          delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
 
           res.status(200).send({
             status: "success",
@@ -828,6 +834,7 @@ try {
       })
    } 
     }catch(err) {
+      console.error(err);
       res.status(200).send({
         status: "error",
         message: "Something went wrong"
