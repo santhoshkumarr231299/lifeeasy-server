@@ -29,3 +29,13 @@ TRUNCATE medicines;
 TRUNCATE pharmacists;
 TRUNCATE reports;
 TRUNCATE users;
+
+drop table approved_items;
+drop table cartitems;
+drop table delivery_men;
+drop table invoices;
+drop table managers;
+drop table medicines;
+drop table pharmacists;
+drop table reports;
+drop table users;

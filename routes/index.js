@@ -1392,12 +1392,6 @@ app.post('/update-user-previleges', (req, res) => {
           message: "Something went wrong",
         })
       }
-      else if (result.changedRows == 0) {
-        res.status(200).send({
-          status: "warning",
-          message: "User Previleges are the same before"
-        })
-      }
       else {
         if(!req.body.userStatus) {
           deleteUserSession(req.body.username);
