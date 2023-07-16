@@ -122,11 +122,6 @@ const allowedUrlsWithoutAuth = [
 ];
 
 app.use(function (req, res, next) {
-  console.log(
-    "session : ",
-    req.headers.authorization,
-    session[req.headers.authorization]
-  );
   if (allowedUrlsWithoutAuth.filter((url) => url == req.url).length > 0) {
     next();
   } else if (
