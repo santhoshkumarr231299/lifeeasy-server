@@ -1,3 +1,8 @@
+const {
+  executeQueryController,
+  authController,
+} = require("./controller/SuperAdminController.ts");
+
 const express = require("express");
 const router = express.Router();
 
@@ -21,18 +26,7 @@ router.use(function (req, res, next) {
   }
 });
 
-router.post("/auth", (req, res) => {
-  res.status(200).send({
-    status: "success",
-    message: "Authenticated User",
-  });
-});
-
-router.post("/execute", (req, res) => {
-  res.status(200).send({
-    status: "success",
-    message: "Query Executed",
-  });
-});
+router.post("/auth", authController);
+router.post("/execute", executeQueryController);
 
 module.exports = router;

@@ -1,60 +1,34 @@
 var express = require("express");
 var app = express();
-const superApi = require("./superapi");
-const chatBot = require("./chatBot");
-var cors = require("cors");
+const superApi = require("../superadmin/superapi");
+const chatBot = require("../chatbot/chatbot");
 const { v4: uuidv4 } = require("uuid");
-var mysql = require("mysql");
-const mysql2 = require("mysql2");
-var nodemailer = require("nodemailer");
 const Razorpay = require("razorpay");
 const schdule = require("node-schedule");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
+const {
+  getTransporterData,
+  getConnection,
+  useCors,
+  getAllowedUrls,
+} = require("./controller/StartupController.ts");
 
-var transporter = nodemailer.createTransport({
-  service: process.env.MAIL_SERVICE_NAME,
-  auth: {
-    user: process.env.MAIL_AUTH_USERNAME,
-    pass: process.env.MAIL_AUTH_PASSWORD,
-  },
-});
+app.use(useCors());
 
-app.use(
-  cors({
-    origin: process.env.CLIENT_BASE_URL,
-    methods: ["GET", "POST"],
-    credentials: false,
-    exposedHeaders: [
-      process.env.AUTH_NAME,
-      process.env.NEW_USER_AUTH_KEY,
-      process.env.FORGOT_PASS_CHANGE_AUTH,
-    ],
-  })
-);
+var transporter = getTransporterData();
+
+var connection = getConnection();
 
 var session = new Map();
 
 var otpRecords = new Map();
 
-var connection;
-if (process.env.PRODUCTION === "false") {
-  connection = mysql.createPool({
-    connectionLimit: process.env.DB_LOCAL_CON_LIMMIT,
-    port: process.env.DB_LOCAL_PORT,
-    host: process.env.DB_LOCAL_HOST,
-    user: process.env.DB_LOCAL_USER,
-    password: process.env.DB_LOCAL_PASSWORD,
-    database: process.env.DB_LOCAL_DBNAME,
-  });
-} else {
-  connection = mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
-}
-
 app.use(
   process.env.CHAT_BASE_PATH,
   (req, res, next) => {
     req.session = session;
+    req.db = connection;
     next();
   },
   chatBot
@@ -63,19 +37,11 @@ app.use(
   process.env.SUPER_API_BASE_PATH,
   (req, res, next) => {
     req.session = session;
+    req.db = connection;
     next();
   },
   superApi
 );
-
-// var connection = mysql.createPool({
-//   connectionLimit : 10,
-//   host: process.env.DB_HOST_NAME,
-//   port: process.env.DB_PORT_NUMBER,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: process.env.DB_DATABASE_NAME,
-// })
 
 schdule.scheduleJob("0 * * * *", () => {
   // at 12.00 am
@@ -111,15 +77,7 @@ function isUndefined(value) {
   return typeof value == "undefined";
 }
 
-const allowedUrlsWithoutAuth = [
-  "/new-user",
-  "/logged-in",
-  "/forgot-pass-change",
-  "/login",
-  "/security/verify-email",
-  "/security/generate-email",
-  "/check-username",
-];
+const allowedUrlsWithoutAuth = getAllowedUrls();
 
 app.use(function (req, res, next) {
   if (allowedUrlsWithoutAuth.filter((url) => url == req.url).length > 0) {
