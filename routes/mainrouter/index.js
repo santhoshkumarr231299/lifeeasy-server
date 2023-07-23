@@ -14,6 +14,11 @@ const {
   getAllowedUrls,
 } = require("./controller/StartupController.ts");
 
+const {
+  checkUserDuplicateDetails,
+  isUserLoggedIn,
+} = require("./controller/LoginController.ts");
+
 app.use(useCors());
 
 var transporter = getTransporterData();
@@ -73,20 +78,20 @@ const deleteUserSession = (username) => {
   }
 };
 
-function isUndefined(value) {
-  return typeof value == "undefined";
-}
-
 const allowedUrlsWithoutAuth = getAllowedUrls();
 
 app.use(function (req, res, next) {
   if (allowedUrlsWithoutAuth.filter((url) => url == req.url).length > 0) {
+    req.session = session;
+    req.db = connection;
     next();
   } else if (
     req.headers.authorization &&
     session[req.headers.authorization] &&
     session[req.headers.authorization].username
   ) {
+    req.session = session;
+    req.db = connection;
     next();
   } else {
     res.status(403).send({
@@ -96,101 +101,8 @@ app.use(function (req, res, next) {
   }
 });
 
-app.post("/check-username", (req, res) => {
-  try {
-    connection.query(
-      "select (select count(username) from users where username = ?) as username_count, (select count(email) from users where email = ?) as email_count, (select count(mobile_number) from users where mobile_number = ?) as mobile_number_count",
-      [req.body.username, req.body.email, req.body.mobileNumber],
-      (err, result, fields) => {
-        if (
-          !result ||
-          (+result[0].username_count === 0 &&
-            +result[0].email_count === 0 &&
-            +result[0].mobile_number_count === 0)
-        ) {
-          res.status(200).send({
-            status: "success",
-            message: "Details not found",
-          });
-          return;
-        } else if (+result[0].username_count > 0) {
-          res.status(200).send({
-            status: "warning",
-            message: "Username already exists...",
-          });
-          return;
-        } else if (+result[0].email_count > 0) {
-          res.status(200).send({
-            status: "warning",
-            message: "Email already exists...",
-          });
-          return;
-        } else if (+result[0].mobile_number_count > 0) {
-          res.status(200).send({
-            status: "warning",
-            message: "Mobile Number already exists...",
-          });
-          return;
-        } else {
-          res.status(200).send({
-            status: "success",
-            message: "Details not found",
-          });
-          return;
-        }
-      }
-    );
-  } catch (err) {
-    console.log(err);
-    res.status(500).send({
-      status: "error",
-      message: "Something went wrong",
-    });
-  }
-});
-
-app.post("/logged-in", (req, res) => {
-  try {
-    if (
-      isUndefined(req.headers.authorization) ||
-      isUndefined(session[req.headers.authorization])
-    ) {
-      res.status(200).send({
-        username: "",
-      });
-      return;
-    }
-    connection.query(
-      "select * from users where username = ?  and status = 1",
-      [
-        session[req.headers.authorization].username,
-        session[req.headers.authorization].pharmacy,
-      ],
-      (err, result, fields) => {
-        if (result && result.length === 1) {
-          res.status(200).send({
-            username: session[req.headers.authorization].username,
-            role: session[req.headers.authorization].role,
-            lastAccessedScreen: result[0].last_accessed,
-            haveAccessTo: result[0].have_access_to,
-            pharmacy: session[req.headers.authorization].pharmacy,
-            subscriptionPack: result[0].subscription_pack,
-            DateOfSubscription: result[0].date_of_subscription,
-          });
-        } else {
-          res.status(200).send({
-            username: "",
-          });
-        }
-      }
-    );
-  } catch (e) {
-    console.log(e);
-    res.status(200).send({
-      username: "",
-    });
-  }
-});
+app.post("/check-username", checkUserDuplicateDetails);
+app.post("/logged-in", isUserLoggedIn);
 
 app.post("/login", (req, res) => {
   try {
