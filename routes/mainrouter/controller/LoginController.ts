@@ -2,7 +2,7 @@ import isUndefined from "../../util/commonUtil";
 
 export function checkUserDuplicateDetails(req : any, res : any) {
     try {
-        var connection = req.db;
+        let connection = req.db;
         connection.query(
           "select (select count(username) from users where username = ?) as username_count, (select count(email) from users where email = ?) as email_count, (select count(mobile_number) from users where mobile_number = ?) as mobile_number_count",
           [req.body.username, req.body.email, req.body.mobileNumber],
@@ -56,8 +56,8 @@ export function checkUserDuplicateDetails(req : any, res : any) {
 
 export function isUserLoggedIn(req : any, res : any) {
     try {
-        var connection = req.db;
-        var session = req.session;
+        let connection = req.db;
+        let session = req.session;
         if (
           isUndefined(req.headers.authorization) ||
           isUndefined(session[req.headers.authorization])
@@ -97,4 +97,20 @@ export function isUserLoggedIn(req : any, res : any) {
           username: "",
         });
       }
+}
+
+export function UpdateLastAccessedScreen(req : any, res : any) {
+  let session = req.session;
+  let connection = req.db;
+  connection.query(
+    "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
+    [
+      req.body.lastAccessedScreen,
+      session[req.headers.authorization].username,
+      session[req.headers.authorization].pharmacy,
+    ],
+    (err : any, result : any, fields : any) => {
+      res.send({ message: "success" });
+    }
+  );
 }

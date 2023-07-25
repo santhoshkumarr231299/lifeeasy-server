@@ -17,6 +17,7 @@ const {
 const {
   checkUserDuplicateDetails,
   isUserLoggedIn,
+  UpdateLastAccessedScreen,
 } = require("./controller/LoginController.ts");
 
 app.use(useCors());
@@ -443,19 +444,7 @@ app.get("/", function (req, res) {
   res.send("You are not authorized...");
 });
 
-app.post("/update-last-accessed", (req, res) => {
-  connection.query(
-    "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
-    [
-      req.body.lastAccessedScreen,
-      session[req.headers.authorization].username,
-      session[req.headers.authorization].pharmacy,
-    ],
-    (err, result, fields) => {
-      res.send({ message: "success" });
-    }
-  );
-});
+app.post("/update-last-accessed", UpdateLastAccessedScreen);
 
 app.post("/get-user-details", (req, res) => {
   connection.query(
