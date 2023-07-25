@@ -20,6 +20,27 @@ const {
   UpdateLastAccessedScreen,
 } = require("./controller/LoginController.ts");
 
+const {
+  getUsers,
+  getUserPrevileges,
+} = require("./controller/AdminLoginController.ts");
+const {
+  getMedicines,
+  postMedicines,
+  getSearchMedicines,
+} = require("./controller/MedicineController.ts");
+const {
+  getUserDetails,
+  updateUserDetails,
+} = require("./controller/SettingsController");
+const {
+  getCartItems,
+  getCartItemsCount,
+  updateCartItems,
+  deleteCartItems,
+  addToCart,
+} = require("./controller/EcommerceCartController");
+
 app.use(useCors());
 
 var transporter = getTransporterData();
@@ -79,10 +100,8 @@ const deleteUserSession = (username) => {
   }
 };
 
-const allowedUrlsWithoutAuth = getAllowedUrls();
-
 app.use(function (req, res, next) {
-  if (allowedUrlsWithoutAuth.filter((url) => url == req.url).length > 0) {
+  if (getAllowedUrls().filter((url) => url == req.url).length > 0) {
     req.session = session;
     req.db = connection;
     next();
@@ -329,108 +348,6 @@ app.post("/new-user", (req, res) => {
   );
 });
 
-app.post("/get-medicines", (req, res) => {
-  connection.query(
-    "select * from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select distinct us.pharmacy_name from users us where username = ?))",
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      if (!result || result.length === 0) {
-        res.status(200).send([]);
-        return;
-      }
-      let data = [];
-      result.map((mdata) => {
-        data.push({
-          mid: mdata.mid,
-          mname: mdata.mname,
-          mcompany: mdata.mcompany,
-          quantity: mdata.quantity,
-          dateAdded: mdata.med_added_date,
-          expiryDate: mdata.expiry_date,
-          medMrp: mdata.med_mrp,
-          medRate: mdata.med_rate,
-          addedBy: mdata.added_by,
-          status: "1" === mdata.status ? "ACTIVE" : "INACTIVE",
-        });
-      });
-      res.status(200).send(data);
-    }
-  );
-});
-
-app.post("/post-medicine", (req, res) => {
-  var sizeOfMed = 1;
-  connection.query(
-    "select max(mid) as total from medicines",
-    [session[req.headers.authorization].username],
-    (err1, result1, fields1) => {
-      if (err1) {
-        console.log(err1);
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-        return;
-      } else {
-        sizeOfMed = +result1[0].total + 1;
-
-        connection.query(
-          "select count(mid) as total from medicines m inner join users u on m.added_by = u.username where u.pharmacy_name = ? and m.mname = ?",
-          [session[req.headers.authorization].pharmacy, req.body.medName],
-          (err3, result3, fields3) => {
-            if (err3) {
-              console.log(err3);
-              res.status(200).send({
-                status: "error",
-                message: "Something went wrong",
-              });
-            } else if (+result3[0].total > 0) {
-              res.status(200).send({
-                status: "warning",
-                message: `${req.body.medName} name already exists...`,
-              });
-              return;
-            } else {
-              var queryParam = [
-                session[req.headers.authorization].username,
-                sizeOfMed,
-                req.body.medName,
-                req.body.medCompany,
-                req.body.medQuantity,
-                req.body.medExpiryDate,
-                req.body.medMrp,
-                req.body.medRate,
-                req.body.medStatus === "ACTIVE" ? "1" : "0",
-                session[req.headers.authorization].username,
-              ];
-
-              connection.query(
-                "insert into medicines (username, mid, mname, mcompany, quantity, expiry_date, med_mrp, med_rate, status, added_by) values (?,?,?,?,?,?,?,?,?,?)",
-                queryParam,
-                (err, result, fields) => {
-                  console.log;
-                  if (err) {
-                    console.log(err);
-                    res.status(200).send({
-                      status: "error",
-                      message: "Something went wrong",
-                    });
-                  } else {
-                    res.status(200).send({
-                      status: "success",
-                      message: "New Medicine Added Successfully",
-                    });
-                  }
-                }
-              );
-            }
-          }
-        );
-      }
-    }
-  );
-});
-
 app.post("/logout", (req, res) => {
   try {
     delete session[req.headers.authorization];
@@ -444,92 +361,28 @@ app.get("/", function (req, res) {
   res.send("You are not authorized...");
 });
 
+//Login Controller
 app.post("/update-last-accessed", UpdateLastAccessedScreen);
 
-app.post("/get-user-details", (req, res) => {
-  connection.query(
-    "select *  from users where username = ?",
-    [req.body.username],
-    (err, result, fields) => {
-      if (result) {
-        res.status(200).send({
-          username: result[0].username,
-          email: result[0].email,
-          mobileNumber: result[0].mobile_number,
-          pharmacyName: result[0].pharmacy_name,
-          branchId: result[0].branch_id,
-          message: "success",
-        });
-      } else {
-        res.status(200).send({
-          username: "",
-          message: "success",
-        });
-      }
-    }
-  );
-});
+//Medicine Controller
+app.post("/get-medicines", getMedicines);
+app.post("/post-medicine", postMedicines);
+app.post("/get-search-medicines", getSearchMedicines);
 
-app.post("/get-search-medicines", (req, res) => {
-  let tsearchWord = "%" + req.body.searchWord + "%";
-  connection.query(
-    "select m.mid, m.mname, m.mcompany, m.quantity, m.med_added_date, m.expiry_date, m.med_mrp, m.med_rate, m.added_by, u.pharmacy_name from medicines m inner join users u on m.added_by = u.username where mname like ? order by mname limit 16",
-    [tsearchWord],
-    (err, result, fields) => {
-      if (!result || result.length === 0) {
-        res.status(200).send([]);
-        return;
-      }
-      let data = [];
-      let counter = 0;
-      result.map((mdata) => {
-        data.push({
-          id: ++counter,
-          mid: mdata.mid,
-          mname: mdata.mname,
-          mcompany: mdata.mcompany,
-          pharmacy: mdata.pharmacy_name,
-          quantity: mdata.quantity,
-          dateAdded: mdata.med_added_date,
-          expiryDate: mdata.expiry_date,
-          medMrp: mdata.med_mrp,
-          medRate: mdata.med_rate,
-          addedBy: mdata.added_by,
-          status: "1" === mdata.status ? "ACTIVE" : "INACTIVE",
-        });
-      });
-      res.status(200).send(data);
-    }
-  );
-});
+//Settings Controller
+app.post("/get-user-details", getUserDetails);
+app.post("/update-user-details", updateUserDetails);
 
-app.post("/get-cart-items", (req, res) => {
-  connection.query(
-    "select medname, quantity, price, mid from cartitems where username = ? and is_ordered = 0",
-    [
-      session[req.headers.authorization].username,
-      session[req.headers.authorization].pharmacy,
-    ],
-    (err, result, fields) => {
-      if (!result || result.length === 0) {
-        res.status(200).send([]);
-        return;
-      }
-      let data = [];
-      let count = 1;
-      result.map((item) => {
-        data.push({
-          id: count++,
-          medName: item.medname,
-          price: item.price,
-          quantity: item.quantity,
-          mid: item.mid,
-        });
-      });
-      res.status(200).send(data);
-    }
-  );
-});
+//Ecommerce Cart Controller
+app.post("/get-cart-items", getCartItems);
+app.post("/get-cart-items-count", getCartItemsCount);
+app.post("/update-cart-items", updateCartItems);
+app.post("/delete-cart-items", deleteCartItems);
+app.post("/add-to-cart", addToCart);
+
+//Admin Login Controller
+app.post("/get-users", getUsers);
+app.post("/get-user-previleges", getUserPrevileges);
 
 app.post("/update-pass", (req, res) => {
   connection.query(
@@ -856,44 +709,6 @@ app.post("/forgot-pass-change", async (req, res) => {
   }
 });
 
-app.post("/update-user-details", (req, res) => {
-  if (session[req.headers.authorization].username !== req.body.username) {
-    res.status(200).send({
-      status: "error",
-      message: "You cannot change Username",
-    });
-    return;
-  }
-  var queryParam = [
-    req.body.email,
-    req.body.mobileNumber,
-    req.body.branchId,
-    session[req.headers.authorization].username,
-  ];
-  connection.query(
-    "update users set email = ?, mobile_number = ?, branch_id = ?  where username = ?",
-    queryParam,
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else if (result.changedRows == 0) {
-        res.status(200).send({
-          status: "warning",
-          message: "User Values are the same before",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "New User Values Updated successfully",
-        });
-      }
-    }
-  );
-});
-
 app.post("/get-reports", (req, res) => {
   connection.query(
     "select * from reports where username in (select u.username from users u where pharmacy_name = (select uu.pharmacy_name from users uu where username = ?)) order by reported_date desc",
@@ -941,72 +756,6 @@ app.post("/post-report", (req, res) => {
         res.status(200).send({
           status: "success",
           message: "New User Values Updated successfully",
-        });
-      }
-    }
-  );
-});
-
-app.post("/get-cart-items-count", (req, res) => {
-  connection.query(
-    "select count(username) as total from cartitems where username = ? and is_ordered = 0",
-    [
-      session[req.headers.authorization].username,
-      session[req.headers.authorization].pharmacy,
-    ],
-    (err, result, fields) => {
-      res.status(200).send({
-        cartSize: result[0].total,
-        message: "success",
-      });
-    }
-  );
-});
-
-app.post("/update-cart-items", (req, res) => {
-  connection.query(
-    "update cartitems set quantity = ? where username = ? and mid = ?",
-    [
-      req.body.newQuantity,
-      session[req.headers.authorization].username,
-      req.body.mid,
-    ],
-    (err, result, fields) => {
-      if (err) {
-        console.log(
-          session[req.headers.authorization].username + " - Error : " + err
-        );
-        res.status(500).send({
-          status: "failed",
-          message: "Error",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "Item deleted Successfully",
-        });
-      }
-    }
-  );
-});
-
-app.post("/delete-cart-items", (req, res) => {
-  connection.query(
-    "delete from cartitems where username = ? and mid = ?",
-    [session[req.headers.authorization].username, req.body.mid],
-    (err, result, fields) => {
-      if (err) {
-        console.log(
-          session[req.headers.authorization].username + " - Error : " + err
-        );
-        res.status(500).send({
-          status: "failed",
-          message: "Error",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "Item deleted Successfully",
         });
       }
     }
@@ -1271,57 +1020,6 @@ app.post("/post-pharmacist-details", (req, res) => {
   );
 });
 
-app.post("/add-to-cart", (req, res) => {
-  let query =
-    "select count(*) as total from cartitems where username = ? and medname = ? and is_ordered = 0 and mid = ?";
-  let queryParam = [
-    session[req.headers.authorization].username,
-    req.body.medName,
-    req.body.mid,
-  ];
-
-  connection.query(query, queryParam, (err, result, fields) => {
-    if (err) {
-      console.log(err);
-      res.status(200).send({
-        status: "error",
-        message: "Something went wrong",
-      });
-    } else if (result[0].total > 0) {
-      res.status(200).send({
-        status: "warning",
-        message: `${req.body.medName} is already in cart...`,
-      });
-    } else {
-      connection.query(
-        "insert into cartitems (mid, username, medname, quantity, price,pharm_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))",
-        [
-          req.body.mid,
-          session[req.headers.authorization].username,
-          req.body.medName,
-          req.body.quantity,
-          req.body.mid,
-          req.body.medName,
-        ],
-        (err2, result2, fields2) => {
-          if (err2) {
-            console.log(err2);
-            res.status(200).send({
-              status: "error",
-              message: "Something went wrong",
-            });
-          } else {
-            res.status(200).send({
-              status: "success",
-              message: `${req.body.medName} is added to Cart`,
-            });
-          }
-        }
-      );
-    }
-  });
-});
-
 app.get("/get-created-pharmacies", (req, res) => {
   connection.query(
     "select distinct pharmacy_name from users order by pharmacy_name asc",
@@ -1338,74 +1036,7 @@ app.get("/get-created-pharmacies", (req, res) => {
   );
 });
 
-app.post("/get-users", (req, res) => {
-  if (session[req.headers.authorization].role !== 1) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed",
-    });
-    return;
-  }
-  let searchPattern = "%" + req.body.search + "%";
-  connection.query(
-    "select username from users where pharmacy_name = (select u.pharmacy_name from users u where u.username = ? ) and role <> 1 and username like ?",
-    [session[req.headers.authorization].username, searchPattern],
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        if (!result || result.length === 0) {
-          res.status(200).send({
-            status: "success",
-            message: "Users",
-            users: [],
-          });
-          return;
-        }
-        let usersTemp = [];
-        result.map((user) => usersTemp.push(user));
-        res.status(200).send({
-          status: "success",
-          message: "Users",
-          users: usersTemp,
-        });
-      }
-    }
-  );
-});
-
-app.post("/get-user-previleges", (req, res) => {
-  if (session[req.headers.authorization].role !== 1) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed",
-    });
-    return;
-  }
-  connection.query(
-    "select have_access_to, status from users where username = ?",
-    [req.body.username],
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "User Previlges",
-          userPrevileges: result[0].have_access_to,
-          userStatus: result[0].status == 1 ? true : false,
-        });
-      }
-    }
-  );
-});
-
+// delete user session is made (so can't able make it to the controller) - Admin Login Controller
 app.post("/update-user-previleges", (req, res) => {
   try {
     if (session[req.headers.authorization].role !== 1) {
@@ -1485,6 +1116,7 @@ app.post("/get-managers", (req, res) => {
   );
 });
 
+// Admin Login Controller - password encryption using bcrypt
 app.post("/post-new-manager", async (req, res) => {
   if (session[req.headers.authorization].role !== 1) {
     res.status(200).send({
