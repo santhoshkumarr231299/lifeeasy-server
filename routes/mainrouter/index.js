@@ -18,11 +18,13 @@ const {
   checkUserDuplicateDetails,
   isUserLoggedIn,
   UpdateLastAccessedScreen,
+  loginUser,
 } = require("./controller/LoginController.ts");
 
 const {
   getUsers,
   getUserPrevileges,
+  updateUserPrevileges,
 } = require("./controller/AdminLoginController.ts");
 const {
   getMedicines,
@@ -41,6 +43,30 @@ const {
   addToCart,
 } = require("./controller/EcommerceCartController");
 
+const {
+  getReports,
+  postReport,
+  getInvoices,
+  postInvoice,
+  getDeliveryManDetails,
+  postDeliveryManDetail,
+  getPhamacistsDetails,
+  postPharmacistDetails,
+  getManagers,
+  postManager,
+} = require("./controller/OrganizationLoginController.ts");
+const {} = require("./controller/EcommerceLoginController.ts");
+const {
+  verifyEmail,
+  generateEmail,
+} = require("./controller/MailController.ts");
+const {} = require("./controller/PaymentController.ts");
+const {
+  updatePassword,
+  forgotPasswordChange,
+} = require("./controller/PasswordController.ts");
+const { logoutUser } = require("./controller/LogOutController.ts");
+
 app.use(useCors());
 
 var transporter = getTransporterData();
@@ -56,6 +82,7 @@ app.use(
   (req, res, next) => {
     req.session = session;
     req.db = connection;
+    req.otpRecords = otpRecords;
     next();
   },
   chatBot
@@ -65,6 +92,7 @@ app.use(
   (req, res, next) => {
     req.session = session;
     req.db = connection;
+    req.otpRecords = otpRecords;
     next();
   },
   superApi
@@ -104,6 +132,7 @@ app.use(function (req, res, next) {
   if (getAllowedUrls().filter((url) => url == req.url).length > 0) {
     req.session = session;
     req.db = connection;
+    req.otpRecords = otpRecords;
     next();
   } else if (
     req.headers.authorization &&
@@ -112,80 +141,12 @@ app.use(function (req, res, next) {
   ) {
     req.session = session;
     req.db = connection;
+    req.otpRecords = otpRecords;
     next();
   } else {
     res.status(403).send({
       status: "failed",
       message: "Unauthorized Content",
-    });
-  }
-});
-
-app.post("/check-username", checkUserDuplicateDetails);
-app.post("/logged-in", isUserLoggedIn);
-
-app.post("/login", (req, res) => {
-  try {
-    connection.query(
-      "select * from users where username = ?  and status = 1",
-      [req.body.username],
-      async (err, result, fields) => {
-        if (result && result.length == 1) {
-          let username = result[0].username;
-          let password = result[0].password;
-          if (username == req.body.username) {
-            if (await bcrypt.compare(req.body.password, password)) {
-              const secretKey = uuidv4();
-              var validatedUser = {
-                username: result[0].username,
-                role: result[0].role,
-                lastAccessedScreen: result[0].last_accessed,
-                pharmacy: result[0].pharmacy_name,
-                subscriptionPack: result[0].subscription_pack,
-                DateOfSubscription: result[0].date_of_subscription,
-                message: "success",
-              };
-              session[secretKey] = validatedUser;
-              console.log(`user logged in : `, validatedUser.username);
-              res.setHeader(process.env.AUTH_NAME, secretKey);
-              res.send(validatedUser);
-            } else {
-              res.status(200).send({
-                username: "",
-                role: "",
-                lastAccessedScreen: 0,
-                message: "failed",
-                comment: "Username - Password Mismatch",
-              });
-            }
-          } else {
-            res.status(200).send({
-              username: "",
-              role: "",
-              lastAccessedScreen: 0,
-              message: "failed",
-              comment: "Username does not Exist",
-            });
-          }
-        } else {
-          res.status(200).send({
-            username: "",
-            role: "",
-            lastAccessedScreen: 0,
-            message: "failed",
-            comment: "Username does not Exist",
-          });
-        }
-      }
-    );
-  } catch (e) {
-    console.log("/login : ", e);
-    res.status(200).send({
-      username: "",
-      role: "",
-      lastAccessedScreen: 0,
-      message: "failed",
-      comment: "Failed to Login - try again later",
     });
   }
 });
@@ -348,21 +309,15 @@ app.post("/new-user", (req, res) => {
   );
 });
 
-app.post("/logout", (req, res) => {
-  try {
-    delete session[req.headers.authorization];
-  } catch (err) {}
-  res.status(200).send({
-    message: "success",
-  });
-});
-
 app.get("/", function (req, res) {
   res.send("You are not authorized...");
 });
 
 //Login Controller
 app.post("/update-last-accessed", UpdateLastAccessedScreen);
+app.post("/check-username", checkUserDuplicateDetails);
+app.post("/logged-in", isUserLoggedIn);
+app.post("/login", loginUser);
 
 //Medicine Controller
 app.post("/get-medicines", getMedicines);
@@ -383,642 +338,30 @@ app.post("/add-to-cart", addToCart);
 //Admin Login Controller
 app.post("/get-users", getUsers);
 app.post("/get-user-previleges", getUserPrevileges);
+app.post("/update-user-previleges", updateUserPrevileges);
 
-app.post("/update-pass", (req, res) => {
-  connection.query(
-    "select username, password, email from users where username = ?",
-    [session[req.headers.authorization].username],
-    async (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      }
-      if (result.length == 0) {
-        console.log(result);
-        res.status(200).send({
-          status: "warning",
-          message: "User does not exist",
-        });
-      } else if (
-        !(await bcrypt.compare(req.body.oldPass, result[0].password))
-      ) {
-        console.log(result);
-        res.status(200).send({
-          status: "warning",
-          message: "Old Password Does Not Match",
-        });
-      } else {
-        let email = result[0].email;
-        if (req.body.oldPass === req.body.newPass) {
-          res.status(200).send({
-            status: "warning",
-            message: "New Password and Old Password are same",
-          });
-        } else {
-          const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
-          connection.query(
-            "update users set password = ? where username = ?",
-            [hashedPassword, session[req.headers.authorization].username],
-            (err, result, fields) => {
-              if (err) {
-                res.status(200).send({
-                  status: "error",
-                  message: "Something went wrong",
-                });
-              } else {
-                deleteUserSession(session[req.headers.authorization].username);
-                var mailOptions = {
-                  from: "PharmSimple <security-alert@pharmsimple.com>",
-                  to: email,
-                  subject: "Password Changed",
-                  text: "The Password of Your Account has been Changed",
-                };
+//Organization Login Controller
+app.post("/get-reports", getReports);
+app.post("/post-report", postReport);
+app.post("/get-invoices", getInvoices);
+app.post("/post-invoice", postInvoice);
+app.post("/get-delivery-men-details", getDeliveryManDetails);
+app.post("/post-delivery-man-details", postDeliveryManDetail);
+app.post("/get-pharmacists-details", getPhamacistsDetails);
+app.post("/post-pharmacist-details", postPharmacistDetails);
+app.post("/get-managers", getManagers);
+app.post("/post-new-manager", postManager);
 
-                transporter.sendMail(mailOptions, function (error, info) {
-                  if (error) {
-                    console.log(error);
-                  } else {
-                    console.log("Password changed : " + email);
-                  }
-                });
-                res.status(200).send({
-                  status: "success",
-                  message: "New Password Updated Successfully",
-                });
-              }
-            }
-          );
-        }
-      }
-    }
-  );
-});
+//Mail Controller
+app.post("/security/verify-email", verifyEmail);
+app.post("/security/generate-email", generateEmail);
 
-app.post("/security/verify-email", (req, res) => {
-  if (!req.body.email) {
-    res.status(200).send({
-      status: "error",
-      message: "Email cannot be Empty",
-    });
-    return;
-  }
+//Password Controller
+app.post("/update-pass", updatePassword);
+app.post("/forgot-pass-change", forgotPasswordChange);
 
-  connection.query(
-    "select email from users where email = ?",
-    [req.body.email],
-    (err, result, fields) => {
-      if (!(!result || result.length === 0)) {
-        res.status(200).send({
-          status: "error",
-          message: "Email already exists",
-        });
-        return;
-      } else {
-        let date = new Date();
-
-        const secretKey = uuidv4();
-
-        console.log(result);
-
-        otpRecords[secretKey] = {
-          mail: req.body.email,
-          otp: Math.floor(Math.random() * 9000 + 1000).toString(),
-          hour: date.getHours(),
-          minute: date.getMinutes(),
-        };
-
-        var mailOptions = {
-          from: "PharmSimple <security-alert@pharmsimple.com>",
-          to: req.body.email,
-          subject: "Verify Your Email",
-          text:
-            "PharmSimple Email Verfication OTP (valid for 5 minutes) : " +
-            otpRecords[secretKey].otp,
-        };
-
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.error(error);
-            res.status(200).send({
-              status: "error",
-              message: "Enter a valid email",
-            });
-            return;
-          } else {
-            console.log("Email sent: " + req.body.email);
-            res.setHeader(process.env.NEW_USER_AUTH_KEY, secretKey);
-            res.status(200).send({
-              status: "success",
-              message: "OTP has been sent to the Mail if exists...",
-            });
-          }
-        });
-      }
-    }
-  );
-});
-
-app.post("/security/generate-email", (req, res) => {
-  if (!req.body.username) {
-    res.status(200).send({
-      status: "error",
-      message: "Username cannot be Empty",
-    });
-    return;
-  }
-
-  connection.query(
-    "select email from users where username = ?",
-    [req.body.username],
-    (err, result, fields) => {
-      if (!result || result.length === 0) {
-        res.status(200).send({
-          status: "error",
-          message: "Username does not exists",
-        });
-        return;
-      } else {
-        let date = new Date();
-
-        const secretKey = uuidv4();
-
-        otpRecords[secretKey] = {
-          username: req.body.username,
-          mail: result[0].email,
-          otp: Math.floor(Math.random() * 9000 + 1000).toString(),
-          hour: date.getHours(),
-          minute: date.getMinutes(),
-        };
-
-        var mailOptions = {
-          from: "PharmSimple <security-alert@pharmsimple.com>",
-          to: result[0].email,
-          subject: "Verify Your Account",
-          text:
-            "PharmSimple Account Verfication OTP (valid for 5 minutes) : " +
-            otpRecords[secretKey].otp,
-        };
-
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log(error);
-            res.status(200).send({
-              status: "error",
-              message: "User does not have a valid email",
-            });
-            return;
-          } else {
-            console.log("Email sent: " + result[0].email);
-            res.setHeader(process.env.FORGOT_PASS_CHANGE_AUTH, secretKey);
-            res.status(200).send({
-              status: "success",
-              message: "OTP has been sent to the Associated Mail",
-              // secretKey: secretKey,
-            });
-          }
-        });
-      }
-    }
-  );
-});
-
-app.post("/forgot-pass-change", async (req, res) => {
-  try {
-    let date = new Date();
-    if (
-      otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute >
-      date.getMinutes()
-    ) {
-      if (
-        date.getMinutes +
-          (60 -
-            otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]]
-              .minute) >
-        5
-      ) {
-        delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
-        res.status(200).send({
-          status: "error",
-          message: "OTP expired",
-        });
-        return;
-      }
-    } else if (
-      !req.headers[process.env.FORGOT_PASS_CHANGE_AUTH] ||
-      !otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]]
-    ) {
-      delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
-      res.status(200).send({
-        status: "error",
-        message: "OTP expired",
-      });
-      return;
-    } else if (
-      !otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]] ||
-      !otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].mail
-    ) {
-      delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
-      res.status(200).send({
-        status: "error",
-        message: "Verify your email...",
-      });
-      return;
-    } else if (
-      otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute <
-      date.getMinutes()
-    ) {
-      if (
-        date.getMinutes() -
-          otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].minute >
-        5
-      ) {
-        res.status(200).send({
-          status: "error",
-          message: "OTP expired",
-        });
-        return;
-      }
-    } else if (
-      otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].otp !==
-      req.body.otp
-    ) {
-      res.status(200).send({
-        status: "error",
-        message: "Invalid OTP",
-      });
-      return;
-    } else {
-      const hashedPassword = await bcrypt.hash(req.body.newPass, 10);
-      connection.query(
-        "update users set password = ? where username = ?",
-        [
-          hashedPassword,
-          otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]].username,
-        ],
-        (err, result, fields) => {
-          if (err) {
-            console.error(err);
-            res.status(200).send({
-              status: "error",
-              message: "Something went wrong",
-            });
-          } else {
-            deleteUserSession(
-              otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]]
-                .username
-            );
-
-            var mailOptions = {
-              from: "PharmSimple <security-alert@pharmsimple.com>",
-              to: otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]]
-                .mail,
-              subject: "Security Alert",
-              text: "Your PharmSimple Account Password has been Changed",
-            };
-
-            transporter.sendMail(mailOptions, function (error, info) {
-              if (error) {
-                res.status(200).send({
-                  status: "error",
-                  message: "Enter a valid email",
-                });
-                return;
-              } else {
-                console.log("Email sent: " + info.response);
-              }
-            });
-
-            delete otpRecords[req.headers[process.env.FORGOT_PASS_CHANGE_AUTH]];
-
-            res.status(200).send({
-              status: "success",
-              message: "Password has been Changed",
-            });
-          }
-        }
-      );
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(200).send({
-      status: "error",
-      message: "Something went wrong",
-    });
-  }
-});
-
-app.post("/get-reports", (req, res) => {
-  connection.query(
-    "select * from reports where username in (select u.username from users u where pharmacy_name = (select uu.pharmacy_name from users uu where username = ?)) order by reported_date desc",
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      let data = [];
-      let count = 1;
-      if (!result || result.length === 0) {
-        res.status(200).send([]);
-        return;
-      }
-      result.map((report) => {
-        data.push({
-          id: count++,
-          reportTitle: report.report_title,
-          reportSubject: report.report_subject,
-          reportDesc: report.report_desc,
-          reportDate: report.reported_date,
-          reportedBy: report.username,
-        });
-      });
-      res.status(200).send(data);
-    }
-  );
-});
-
-app.post("/post-report", (req, res) => {
-  var queryParam = [
-    session[req.headers.authorization].username,
-    session[req.headers.authorization].role,
-    req.body.reportTitle,
-    req.body.reportSubject,
-    req.body.reportDesc,
-  ];
-  connection.query(
-    "insert into reports (username, role, report_title, report_subject, report_desc, reported_date) values (?,?,?,?,?,NOW())",
-    queryParam,
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "New User Values Updated successfully",
-        });
-      }
-    }
-  );
-});
-
-app.post("/get-invoices", (req, res) => {
-  connection.query(
-    "select * from invoices where username = ? order by invoice_date desc",
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      if (err) {
-        console.log(err);
-      }
-      if (!result || result.length === 0) {
-        res.status(200).send([]);
-        return;
-      }
-      let resp = [];
-      result.map((data) => {
-        resp.push({
-          username: session[req.headers.authorization].username,
-          pharmName: data.pharm_name,
-          branch: data.branch,
-          quantity: data.quantity,
-          amount: data.amount,
-          invoiceDate: data.invoice_date,
-        });
-      });
-      res.status(200).send(resp);
-    }
-  );
-});
-
-app.post("/post-invoice", (req, res) => {
-  var queryParam = [
-    session[req.headers.authorization].username,
-    req.body.pharmName,
-    req.body.branch,
-    req.body.quantity,
-    req.body.amount,
-  ];
-  connection.query(
-    "insert into invoices set username = ?, pharm_name = ?, branch = ?, quantity = ?, amount = ?, invoice_date = now()",
-    queryParam,
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "New Invoice inserted successfully",
-        });
-      }
-    }
-  );
-});
-
-app.post("/get-delivery-men-details", (req, res) => {
-  var query =
-    "select * from delivery_men where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ? ))";
-  connection.query(
-    query,
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      if (err) {
-        console.log(err);
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        if (!result || result.length === 0) {
-          res.status(200).send([]);
-          return;
-        }
-        let respData = [];
-        result.map((data) => {
-          respData.push({
-            name: data.username,
-            email: data.email,
-            mobileNumber: data.mobile_number,
-            address: data.address,
-            aadhar: data.aadhar_number,
-          });
-        });
-        res.status(200).send(respData);
-      }
-    }
-  );
-});
-
-app.post("/post-delivery-man-details", (req, res) => {
-  var queryParam = [
-    req.body.name,
-    req.body.email,
-    req.body.mobileNumber,
-    req.body.address,
-    req.body.aadhar,
-    session[req.headers.authorization].username,
-    session[req.headers.authorization].pharmacy,
-  ];
-  connection.query(
-    "insert into delivery_men set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?, pharmacy_name = ?",
-    queryParam,
-    async (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        const hashedPassword = await bcrypt.hash("deliveryman", 10);
-        var queryParam1 = [
-          req.body.name,
-          hashedPassword,
-          req.body.mobileNumber,
-          session[req.headers.authorization].username,
-          req.body.email,
-          session[req.headers.authorization].username,
-          "[12]",
-          session[req.headers.authorization].pharmacy,
-          1,
-          session[req.headers.authorization].pharmacy,
-          1,
-        ];
-        connection.query(
-          "insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)",
-          queryParam1,
-          (err1, result1, fields1) => {
-            if (err1) {
-              console.log(err1);
-              res.status(200).send({
-                status: "error",
-                message: "Something went wrong",
-              });
-            } else {
-              res.status(200).send({
-                status: "success",
-                message: "New Delivery Man details inserted successfully",
-              });
-            }
-          }
-        );
-      }
-    }
-  );
-});
-
-app.post("/get-pharmacists-details", (req, res) => {
-  var query = "select * from pharmacists where added_by = ?";
-  connection.query(
-    query,
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        if (!result || result.length === 0) {
-          res.status(200).send([]);
-          return;
-        }
-        let respData = [];
-        result.map((data) => {
-          respData.push({
-            name: data.username,
-            email: data.email,
-            mobileNumber: data.mobile_number,
-            address: data.address,
-            aadhar: data.aadhar_number,
-          });
-        });
-        res.status(200).send(respData);
-      }
-    }
-  );
-});
-
-app.post("/post-pharmacist-details", (req, res) => {
-  connection.query(
-    "select count(*) as total from users where username = ?",
-    [req.body.name],
-    (err3, result3, fields3) => {
-      if (err3) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else if (result3[0].total > 0) {
-        res.status(200).send({
-          status: "warning",
-          message: "Username already exists",
-        });
-      } else {
-        var queryParam = [
-          req.body.name,
-          req.body.email,
-          req.body.mobileNumber,
-          req.body.address,
-          req.body.aadhar,
-          session[req.headers.authorization].username,
-          session[req.headers.authorization].pharmacy,
-          1,
-          session[req.headers.authorization].pharmacy,
-          1,
-        ];
-        connection.query(
-          "insert into pharmacists set username = ?, email = ?, mobile_number = ?, address = ?, aadhar_number = ?, added_by = ?",
-          queryParam,
-          async (err, result, fields) => {
-            if (err) {
-              res.status(200).send({
-                status: "error",
-                message: "Something went wrong",
-              });
-            } else {
-              const hashedPassword = await bcrypt.hash("pharmacist", 10);
-              var queryParam1 = [
-                req.body.name,
-                hashedPassword,
-                3,
-                11,
-                req.body.email,
-                session[req.headers.authorization].username,
-                session[req.headers.authorization].username,
-                req.body.mobileNumber,
-                "[11]",
-                session[req.headers.authorization].pharmacy,
-                1,
-                session[req.headers.authorization].pharmacy,
-                1,
-              ];
-              connection.query(
-                "insert into users (username, password, role,last_accessed, email,pharmacy_name,branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,?,?,?,(select u.pharmacy_name from users u where username = ?),(select u.branch_id from users u where username = ?),?,?, (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?))",
-                queryParam1,
-                (err1, result1, fields1) => {
-                  if (err1) {
-                    console.log(err1);
-                    res.status(200).send({
-                      status: "error",
-                      message: "Something went wrong",
-                    });
-                  } else {
-                    res.status(200).send({
-                      status: "success",
-                      message: "New Pharmacist details inserted successfully",
-                    });
-                  }
-                }
-              );
-            }
-          }
-        );
-      }
-    }
-  );
-});
+//LogOut Controller
+app.post("/logout", logoutUser);
 
 app.get("/get-created-pharmacies", (req, res) => {
   connection.query(
@@ -1032,150 +375,6 @@ app.get("/get-created-pharmacies", (req, res) => {
         status: "success",
         pharmacies: list,
       });
-    }
-  );
-});
-
-// delete user session is made (so can't able make it to the controller) - Admin Login Controller
-app.post("/update-user-previleges", (req, res) => {
-  try {
-    if (session[req.headers.authorization].role !== 1) {
-      res.status(200).send({
-        status: "error",
-        message: "Authorization Failed",
-      });
-      return;
-    }
-    let query;
-    let list;
-    if (req.body.userStatus) {
-      query =
-        "update users set have_access_to = ?, last_accessed = ?, status = 1 where username = ?";
-      list = [
-        req.body.userPrevileges,
-        req.body.lastAccessedScreen,
-        req.body.username,
-      ];
-    } else {
-      query = "update users set status = 0 where username = ?";
-      list = [req.body.username];
-    }
-    connection.query(query, list, (err, result, fields) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        if (!req.body.userStatus) {
-          deleteUserSession(req.body.username);
-        }
-        res.status(200).send({
-          status: "success",
-          message: "User Previleges Updated successfully",
-        });
-      }
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(200).send({
-      status: "error",
-      message: "Something went wrong",
-    });
-  }
-});
-
-app.post("/get-managers", (req, res) => {
-  connection.query(
-    "select * from managers where pharmacy_name = (select u.pharmacy_name from users u where u.username = ?) ",
-    [session[req.headers.authorization].username],
-    (err, result, fields) => {
-      if (err) {
-        console.log(err);
-        res.status(200).send({
-          status: "error",
-          message: "Something went Wrong",
-        });
-      } else {
-        if (!result || result.length === 0) {
-          res.status(200).send([]);
-          return;
-        }
-        let data = [];
-        result.forEach((element) => {
-          data.push({
-            username: element.username,
-            email: element.email,
-            branch: element.branch_id,
-            address: element.address,
-          });
-        });
-        res.status(200).send(data);
-      }
-    }
-  );
-});
-
-// Admin Login Controller - password encryption using bcrypt
-app.post("/post-new-manager", async (req, res) => {
-  if (session[req.headers.authorization].role !== 1) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed",
-    });
-    return;
-  }
-  const hashedPassword = await bcrypt.hash(req.body.password, 10);
-  var queryParam1 = [
-    req.body.username,
-    hashedPassword,
-    req.body.email,
-    session[req.headers.authorization].username,
-    req.body.branch,
-    req.body.mobileNumber,
-    session[req.headers.authorization].pharmacy,
-    1,
-    session[req.headers.authorization].pharmacy,
-    1,
-  ];
-  connection.query(
-    "insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]', (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))",
-    queryParam1,
-    (err1, result1, fields1) => {
-      if (err1) {
-        console.log(err1);
-        res.status(200).send({
-          status: "error",
-          message: "Failed to insert Manager",
-        });
-      } else {
-        var queryParam = [
-          req.body.username,
-          hashedPassword,
-          req.body.email,
-          req.body.username,
-          req.body.address,
-          session[req.headers.authorization].username,
-        ];
-        connection.query(
-          "insert into managers (username, password, email, branch_id, address, pharmacy_name) values (?,?,?,(select u.branch_id from users u where u.username = ?),?, (select uuu.pharmacy_name from users uuu where uuu.username = ?))",
-          queryParam,
-          (err, result, fields) => {
-            if (err) {
-              console.log(err);
-              res.status(200).send({
-                status: "error",
-                message: "Something went wrong",
-              });
-            } else {
-              res.status(200).send({
-                status: "success",
-                message: "Manager details inserted successfully",
-              });
-            }
-          }
-        );
-      }
     }
   );
 });
