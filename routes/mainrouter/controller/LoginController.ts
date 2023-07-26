@@ -1,6 +1,9 @@
 import { isUndefined } from "../../util/commonUtil";
 import { getRandomUuid } from "../../util/commonUtil";
+import { getTransporterData } from "./StartupController";
 const bcrypt = require("bcrypt");
+
+var transporter = getTransporterData();
 
 export function checkUserDuplicateDetails(req: any, res: any) {
   try {
@@ -183,4 +186,160 @@ export function loginUser(req: any, res: any) {
       comment: "Failed to Login - try again later",
     });
   }
+}
+
+export function createNewUser(req: any, res: any) {
+  let connection = req.db;
+  let session = req.session;
+  let otpRecords = req.otpRecords;
+  let newUserAuthKey: string = process.env.NEW_USER_AUTH_KEY || "";
+  connection.query(
+    "select * from users where username = ?",
+    [req.body.username],
+    async (err: any, result: any, fields: any) => {
+      let date = new Date();
+      if (err) {
+        console.log(err);
+        res.status(200).send({
+          status: "danger",
+          message: "Something went wrong",
+        });
+        return;
+      } else if (result.length > 0) {
+        res.status(200).send({
+          status: "danger",
+          message: "Username already exists",
+        });
+        return;
+      } else if (
+        !otpRecords[req.headers[newUserAuthKey]] ||
+        !otpRecords[req.headers[newUserAuthKey]].mail
+      ) {
+        console.error("otp not found");
+        res.status(200).send({
+          status: "error",
+          message: "Verify your email...",
+        });
+        return;
+      } else if (
+        otpRecords[req.headers[newUserAuthKey]].mail !== req.body.email
+      ) {
+        console.error("email is not the same");
+        delete otpRecords[req.headers[newUserAuthKey]];
+        res.status(200).send({
+          status: "error",
+          message: "Email Mismatch...",
+        });
+        return;
+      } else if (
+        otpRecords[req.headers[newUserAuthKey]].minute > date.getMinutes()
+      ) {
+        if (
+          date.getMinutes() +
+            (60 - otpRecords[req.headers[newUserAuthKey]].minute) >
+          5
+        ) {
+          delete otpRecords[req.headers[newUserAuthKey]];
+          res.status(200).send({
+            status: "error",
+            message: "OTP expired",
+          });
+          return;
+        }
+      } else if (
+        otpRecords[req.headers[newUserAuthKey]].minute < date.getMinutes()
+      ) {
+        if (
+          date.getMinutes() - otpRecords[req.headers[newUserAuthKey]].minute >
+          5
+        ) {
+          delete otpRecords[req.headers[newUserAuthKey]];
+          res.status(200).send({
+            status: "error",
+            message: "OTP expired",
+          });
+          return;
+        }
+      } else if (otpRecords[req.headers[newUserAuthKey]].otp !== req.body.otp) {
+        res.status(200).send({
+          status: "error",
+          message: "Invalid OTP",
+        });
+        return;
+      } else {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        connection.query(
+          "insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)",
+          [
+            req.body.username,
+            hashedPassword,
+            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+              ? 1
+              : 2,
+            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+              ? 1
+              : 8,
+            req.body.email,
+            req.body.mobileNumber,
+            req.body.pharmacyName,
+            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+              ? 1
+              : -1,
+            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+              ? "[1][2][3][4][5][6][7][9][10]"
+              : "[8]",
+          ],
+          (err1: any, result1: any, fields1: any) => {
+            if (err1) {
+              console.log(err1);
+              res.status(200).send({
+                status: "danger",
+                message: "Something went wrong",
+              });
+            } else {
+              try {
+                var mailOptions = {
+                  from: "PharmSimple <security-alert@pharmsimple.com>",
+                  to: otpRecords[req.headers[newUserAuthKey]].mail,
+                  subject: "Congratulations",
+                  text:
+                    "Your PharmSimple " +
+                    (req.body.pharmacyName === "" ? "" : "Management ") +
+                    "Account has been Created Successfully",
+                };
+
+                transporter.sendMail(
+                  mailOptions,
+                  function (error: any, info: any) {
+                    if (error) {
+                      res.status(200).send({
+                        status: "error",
+                        message: "Enter a valid email",
+                      });
+                      return;
+                    } else {
+                      console.log("Email sent: " + req.body.email);
+                    }
+                  }
+                );
+
+                delete otpRecords[req.headers[newUserAuthKey]];
+
+                res.status(200).send({
+                  status: "success",
+                  message: "New User Created",
+                });
+              } catch (ex) {
+                console.log("Exception while creating new user", ex);
+                res.status(200).send({
+                  status: "error",
+                  message: "Something went wrong",
+                });
+              }
+            }
+          }
+        );
+      }
+    }
+  );
 }

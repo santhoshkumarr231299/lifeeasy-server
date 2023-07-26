@@ -49,30 +49,38 @@ export function getCartItemsCount(req: any, res: any) {
 export function updateCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
-  connection.query(
-    "update cartitems set quantity = ? where username = ? and mid = ?",
-    [
-      req.body.newQuantity,
-      session[req.headers.authorization].username,
-      req.body.mid,
-    ],
-    (err: any, result: any, fields: any) => {
-      if (err) {
-        console.log(
-          session[req.headers.authorization].username + " - Error : " + err
-        );
-        res.status(500).send({
-          status: "failed",
-          message: "Error",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "Item deleted Successfully",
-        });
+
+  if (String(parseInt(req.body.newQuantity)) == "NaN") {
+    res.status(200).send({
+      status: "failed",
+      message: "Quantity must a Number",
+    });
+  } else {
+    connection.query(
+      "update cartitems set quantity = ? where username = ? and mid = ?",
+      [
+        req.body.newQuantity,
+        session[req.headers.authorization].username,
+        req.body.mid,
+      ],
+      (err: any, result: any, fields: any) => {
+        if (err) {
+          console.log(
+            session[req.headers.authorization].username + " - Error : " + err
+          );
+          res.status(500).send({
+            status: "failed",
+            message: "Error",
+          });
+        } else {
+          res.status(200).send({
+            status: "success",
+            message: "Item Quantity Updated Successfully",
+          });
+        }
       }
-    }
-  );
+    );
+  }
 }
 
 export function deleteCartItems(req: any, res: any) {

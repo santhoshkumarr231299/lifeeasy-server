@@ -424,3 +424,42 @@ export async function postManager(req: any, res: any) {
     }
   );
 }
+
+export function getDashboardDetails(req : any, res : any) {
+  let connection = req.db;
+  let session = req.session;
+  connection.query(
+    "select (select count(*) from managers where pharmacy_name = (select u.pharmacy_name from users u where username = ?)) as managers_count, (select count(*) from pharmacists where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as pharmacists_count, (select count(*) from delivery_men where pharmacy_name = ?) as delivery_men_count, (select count(*) from medicines where added_by in (select u.username from users u where u.pharmacy_name = (select uu.pharmacy_name from users uu where uu.username = ?))) as medicines_count",
+    [
+      session[req.headers.authorization].username,
+      session[req.headers.authorization].username,
+      session[req.headers.authorization].pharmacy,
+      session[req.headers.authorization].username,
+    ],
+    (err : any, result : any, fields : any) => {
+      if (err) {
+        console.log(err);
+        res.status(200).send({
+          status: "error",
+          message: "Something went Wrong",
+        });
+      } else {
+        if (!result || result.length === 0) {
+          res.status(200).send({
+            managersCount: 0,
+            pharmacistsCount: 0,
+            DeliveryMenCount: 0,
+            medicinesCount: 0,
+          });
+          return;
+        }
+        res.status(200).send({
+          managersCount: result[0].managers_count,
+          pharmacistsCount: result[0].pharmacists_count,
+          DeliveryMenCount: result[0].delivery_men_count,
+          medicinesCount: result[0].medicines_count,
+        });
+      }
+    }
+  );
+}
