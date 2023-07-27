@@ -1,4 +1,4 @@
-export function getUserDetails(req: any, res: any) {
+function getUserDetails(req: any, res: any) {
   let connection = req.db;
   connection.query(
     "select *  from users where username = ?",
@@ -23,7 +23,7 @@ export function getUserDetails(req: any, res: any) {
   );
 }
 
-export function updateUserDetails(req: any, res: any) {
+function updateUserDetails(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].username !== req.body.username) {
@@ -42,7 +42,7 @@ export function updateUserDetails(req: any, res: any) {
   connection.query(
     "update users set email = ?, mobile_number = ?, branch_id = ?  where username = ?",
     queryParam,
-    (err : any, result : any, fields : any) => {
+    (err: any, result: any, fields: any) => {
       if (err) {
         res.status(200).send({
           status: "error",
@@ -62,3 +62,8 @@ export function updateUserDetails(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  getUserDetails,
+  updateUserDetails,
+};

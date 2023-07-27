@@ -1,11 +1,11 @@
-import { deleteUserSession } from "../../util/AuthUtil";
+const AuthUtil = require("../../util/AuthUtil.ts");
 const bcrypt = require("bcrypt");
-import { getTransporterData } from "./StartupController";
+const StartupController = require("./StartupController.ts");
 require("dotenv").config();
 
-var transporter = getTransporterData();
+const transporter = StartupController.getTransporterData();
 
-export function updatePassword(req: any, res: any) {
+function updatePassword(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -51,7 +51,7 @@ export function updatePassword(req: any, res: any) {
                   message: "Something went wrong",
                 });
               } else {
-                deleteUserSession(
+                AuthUtil.deleteUserSession(
                   session[req.headers.authorization].username,
                   session
                 );
@@ -85,12 +85,13 @@ export function updatePassword(req: any, res: any) {
   );
 }
 
-export async function forgotPasswordChange(req: any, res: any) {
+async function forgotPasswordChange(req: any, res: any) {
   try {
     let connection = req.db;
     let otpRecords = req.otpRecords;
     let session = req.session;
-    let forgotPasswordChangeAuth : string = process.env.FORGOT_PASS_CHANGE_AUTH || "";
+    let forgotPasswordChangeAuth: string =
+      process.env.FORGOT_PASS_CHANGE_AUTH || "";
     let date = new Date();
     if (
       otpRecords[req.headers[forgotPasswordChangeAuth]].minute >
@@ -98,9 +99,7 @@ export async function forgotPasswordChange(req: any, res: any) {
     ) {
       if (
         date.getMinutes() +
-          (60 -
-            otpRecords[req.headers[forgotPasswordChangeAuth]]
-              .minute) >
+          (60 - otpRecords[req.headers[forgotPasswordChangeAuth]].minute) >
         5
       ) {
         delete otpRecords[req.headers[forgotPasswordChangeAuth]];
@@ -146,8 +145,7 @@ export async function forgotPasswordChange(req: any, res: any) {
         return;
       }
     } else if (
-      otpRecords[req.headers[forgotPasswordChangeAuth]].otp !==
-      req.body.otp
+      otpRecords[req.headers[forgotPasswordChangeAuth]].otp !== req.body.otp
     ) {
       res.status(200).send({
         status: "error",
@@ -162,7 +160,7 @@ export async function forgotPasswordChange(req: any, res: any) {
           hashedPassword,
           otpRecords[req.headers[forgotPasswordChangeAuth]].username,
         ],
-        (err : any, result : any, fields : any) => {
+        (err: any, result: any, fields: any) => {
           if (err) {
             console.error(err);
             res.status(200).send({
@@ -170,21 +168,19 @@ export async function forgotPasswordChange(req: any, res: any) {
               message: "Something went wrong",
             });
           } else {
-            deleteUserSession(
-              otpRecords[req.headers[forgotPasswordChangeAuth]]
-                .username,
+            AuthUtil.deleteUserSession(
+              otpRecords[req.headers[forgotPasswordChangeAuth]].username,
               session
             );
 
             var mailOptions = {
               from: "PharmSimple <security-alert@pharmsimple.com>",
-              to: otpRecords[req.headers[forgotPasswordChangeAuth]]
-                .mail,
+              to: otpRecords[req.headers[forgotPasswordChangeAuth]].mail,
               subject: "Security Alert",
               text: "Your PharmSimple Account Password has been Changed",
             };
 
-            transporter.sendMail(mailOptions, function (error : any, info : any) {
+            transporter.sendMail(mailOptions, function (error: any, info: any) {
               if (error) {
                 res.status(200).send({
                   status: "error",
@@ -214,3 +210,8 @@ export async function forgotPasswordChange(req: any, res: any) {
     });
   }
 }
+
+module.exports = {
+  updatePassword,
+  forgotPasswordChange,
+};

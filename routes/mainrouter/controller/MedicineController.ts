@@ -1,4 +1,4 @@
-export function getMedicines(req: any, res: any) {
+function getMedicines(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -10,7 +10,7 @@ export function getMedicines(req: any, res: any) {
         return;
       }
       let data: any = [];
-      result.map((mdata : any) => {
+      result.map((mdata: any) => {
         data.push({
           mid: mdata.mid,
           mname: mdata.mname,
@@ -29,7 +29,7 @@ export function getMedicines(req: any, res: any) {
   );
 }
 
-export function postMedicines(req: any, res: any) {
+function postMedicines(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   var sizeOfMed = 1;
@@ -104,20 +104,20 @@ export function postMedicines(req: any, res: any) {
   );
 }
 
-export function getSearchMedicines(req: any, res: any) {
+function getSearchMedicines(req: any, res: any) {
   let connection = req.db;
   let tsearchWord = "%" + req.body.searchWord + "%";
   connection.query(
     "select m.mid, m.mname, m.mcompany, m.quantity, m.med_added_date, m.expiry_date, m.med_mrp, m.med_rate, m.added_by, u.pharmacy_name from medicines m inner join users u on m.added_by = u.username where mname like ? order by mname limit 16",
     [tsearchWord],
-    (err : any, result : any, fields : any) => {
+    (err: any, result: any, fields: any) => {
       if (!result || result.length === 0) {
         res.status(200).send([]);
         return;
       }
-      let data : any = [];
+      let data: any = [];
       let counter = 0;
-      result.map((mdata : any) => {
+      result.map((mdata: any) => {
         data.push({
           id: ++counter,
           mid: mdata.mid,
@@ -137,3 +137,9 @@ export function getSearchMedicines(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  getMedicines,
+  postMedicines,
+  getSearchMedicines,
+};

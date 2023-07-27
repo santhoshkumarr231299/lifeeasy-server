@@ -1,4 +1,4 @@
-export function getCartItems(req: any, res: any) {
+function getCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -28,7 +28,7 @@ export function getCartItems(req: any, res: any) {
   );
 }
 
-export function getCartItemsCount(req: any, res: any) {
+function getCartItemsCount(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -46,7 +46,7 @@ export function getCartItemsCount(req: any, res: any) {
   );
 }
 
-export function updateCartItems(req: any, res: any) {
+function updateCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
 
@@ -83,7 +83,7 @@ export function updateCartItems(req: any, res: any) {
   }
 }
 
-export function deleteCartItems(req: any, res: any) {
+function deleteCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -108,7 +108,7 @@ export function deleteCartItems(req: any, res: any) {
   );
 }
 
-export function addToCart(req: any, res: any) {
+function addToCart(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   let query =
@@ -160,3 +160,11 @@ export function addToCart(req: any, res: any) {
     }
   });
 }
+
+module.exports = {
+  getCartItems,
+  getCartItemsCount,
+  updateCartItems,
+  deleteCartItems,
+  addToCart,
+};

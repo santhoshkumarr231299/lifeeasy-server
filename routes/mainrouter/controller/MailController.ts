@@ -1,9 +1,9 @@
-import { getRandomUuid } from "../../util/commonUtil";
-import { getTransporterData } from "./StartupController";
+const CommonUtil = require("../../util/CommonUtil.ts");
+const StartupController = require("./StartupController.ts");
 
-var transporter = getTransporterData();
+const transporter = StartupController.getTransporterData();
 
-export function verifyEmail(req: any, res: any) {
+function verifyEmail(req: any, res: any) {
   let connection = req.db;
   let otpRecords = req.otpRecords;
   if (!req.body.email) {
@@ -27,7 +27,7 @@ export function verifyEmail(req: any, res: any) {
       } else {
         let date = new Date();
 
-        const secretKey = getRandomUuid();
+        const secretKey = CommonUtil.getRandomUuid();
 
         otpRecords[secretKey] = {
           mail: req.body.email,
@@ -67,7 +67,7 @@ export function verifyEmail(req: any, res: any) {
   );
 }
 
-export function generateEmail(req: any, res: any) {
+function generateEmail(req: any, res: any) {
   let connection = req.db;
   let otpRecords = req.otpRecords;
   if (!req.body.username) {
@@ -91,7 +91,7 @@ export function generateEmail(req: any, res: any) {
       } else {
         let date = new Date();
 
-        const secretKey = getRandomUuid();
+        const secretKey = CommonUtil.getRandomUuid();
 
         otpRecords[secretKey] = {
           username: req.body.username,
@@ -132,3 +132,8 @@ export function generateEmail(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  verifyEmail,
+  generateEmail,
+};

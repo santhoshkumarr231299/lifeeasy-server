@@ -1,11 +1,10 @@
-import { isUndefined } from "../../util/commonUtil";
-import { getRandomUuid } from "../../util/commonUtil";
-import { getTransporterData } from "./StartupController";
+const AuthUtil = require("../../util/AuthUtil.ts");
+const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 
-var transporter = getTransporterData();
+const transporter = StartupController.getTransporterData();
 
-export function checkUserDuplicateDetails(req: any, res: any) {
+function checkUserDuplicateDetails(req: any, res: any) {
   try {
     let connection = req.db;
     connection.query(
@@ -59,13 +58,13 @@ export function checkUserDuplicateDetails(req: any, res: any) {
   }
 }
 
-export function isUserLoggedIn(req: any, res: any) {
+function isUserLoggedIn(req: any, res: any) {
   try {
     let connection = req.db;
     let session = req.session;
     if (
-      isUndefined(req.headers.authorization) ||
-      isUndefined(session[req.headers.authorization])
+      AuthUtil.isUndefined(req.headers.authorization) ||
+      AuthUtil.isUndefined(session[req.headers.authorization])
     ) {
       res.status(200).send({
         username: "",
@@ -104,7 +103,7 @@ export function isUserLoggedIn(req: any, res: any) {
   }
 }
 
-export function UpdateLastAccessedScreen(req: any, res: any) {
+function updateLastAccessedScreen(req: any, res: any) {
   let session = req.session;
   let connection = req.db;
   connection.query(
@@ -120,7 +119,7 @@ export function UpdateLastAccessedScreen(req: any, res: any) {
   );
 }
 
-export function loginUser(req: any, res: any) {
+function loginUser(req: any, res: any) {
   try {
     let connection = req.db;
     let session = req.session;
@@ -133,7 +132,7 @@ export function loginUser(req: any, res: any) {
           let password = result[0].password;
           if (username == req.body.username) {
             if (await bcrypt.compare(req.body.password, password)) {
-              const secretKey = getRandomUuid();
+              const secretKey = AuthUtil.getRandomUuid();
               var validatedUser = {
                 username: result[0].username,
                 role: result[0].role,
@@ -188,7 +187,7 @@ export function loginUser(req: any, res: any) {
   }
 }
 
-export function createNewUser(req: any, res: any) {
+function createNewUser(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   let otpRecords = req.otpRecords;
@@ -343,3 +342,11 @@ export function createNewUser(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  checkUserDuplicateDetails,
+  isUserLoggedIn,
+  updateLastAccessedScreen,
+  loginUser,
+  createNewUser,
+};
