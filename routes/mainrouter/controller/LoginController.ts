@@ -1,4 +1,4 @@
-const AuthUtil = require("../../util/AuthUtil.ts");
+const CommonUtil = require("../../util/CommonUtil.ts");
 const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 
@@ -63,8 +63,8 @@ function isUserLoggedIn(req: any, res: any) {
     let connection = req.db;
     let session = req.session;
     if (
-      AuthUtil.isUndefined(req.headers.authorization) ||
-      AuthUtil.isUndefined(session[req.headers.authorization])
+      CommonUtil.isUndefined(req.headers.authorization) ||
+      CommonUtil.isUndefined(session[req.headers.authorization])
     ) {
       res.status(200).send({
         username: "",
@@ -132,7 +132,7 @@ function loginUser(req: any, res: any) {
           let password = result[0].password;
           if (username == req.body.username) {
             if (await bcrypt.compare(req.body.password, password)) {
-              const secretKey = AuthUtil.getRandomUuid();
+              const secretKey = CommonUtil.getRandomUuid();
               var validatedUser = {
                 username: result[0].username,
                 role: result[0].role,
