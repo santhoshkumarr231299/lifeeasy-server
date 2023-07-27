@@ -1,4 +1,4 @@
-export async function executeQueryController(req: any, res: any) {
+async function executeQueryController(req: any, res: any) {
   try {
     var connection = req.db;
     connection.query(
@@ -26,9 +26,14 @@ export async function executeQueryController(req: any, res: any) {
   }
 }
 
-export async function authController(req: any, res: any) {
+async function authController(req: any, res: any) {
   res.status(200).send({
     status: "success",
     message: "Authenticated User",
   });
 }
+
+module.exports = {
+  executeQueryController,
+  authController,
+};
