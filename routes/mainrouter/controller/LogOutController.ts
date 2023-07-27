@@ -7,3 +7,5 @@ export function logoutUser(req: any, res: any) {
     message: "failed",
   });
 }
+
+module.exports = { logoutUser };

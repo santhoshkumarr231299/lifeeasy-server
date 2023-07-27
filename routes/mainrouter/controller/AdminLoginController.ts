@@ -1,6 +1,6 @@
-import { deleteUserSession } from "../../util/AuthUtil";
+const AuthUtil = require("../../util/AuthUtil.ts");
 
-export function getUsers(req: any, res: any) {
+function getUsers(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].role !== 1) {
@@ -41,7 +41,7 @@ export function getUsers(req: any, res: any) {
   );
 }
 
-export function getUserPrevileges(req: any, res: any) {
+function getUserPrevileges(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].role !== 1) {
@@ -72,7 +72,7 @@ export function getUserPrevileges(req: any, res: any) {
   );
 }
 
-export function updateUserPrevileges(req : any, res : any) {
+function updateUserPrevileges(req: any, res: any) {
   try {
     let connection = req.connection;
     let session = req.session;
@@ -83,8 +83,8 @@ export function updateUserPrevileges(req : any, res : any) {
       });
       return;
     }
-    let query : string;
-    let list : any[];
+    let query: string;
+    let list: any[];
     if (req.body.userStatus) {
       query =
         "update users set have_access_to = ?, last_accessed = ?, status = 1 where username = ?";
@@ -97,7 +97,7 @@ export function updateUserPrevileges(req : any, res : any) {
       query = "update users set status = 0 where username = ?";
       list = [req.body.username];
     }
-    connection.query(query, list, (err : any, result : any, fields : any) => {
+    connection.query(query, list, (err: any, result: any, fields: any) => {
       if (err) {
         res.status(200).send({
           status: "error",
@@ -105,7 +105,7 @@ export function updateUserPrevileges(req : any, res : any) {
         });
       } else {
         if (!req.body.userStatus) {
-          deleteUserSession(req.body.username, session);
+          AuthUtil.deleteUserSession(req.body.username, session);
         }
         res.status(200).send({
           status: "success",
@@ -122,6 +122,10 @@ export function updateUserPrevileges(req : any, res : any) {
   }
 }
 
-export function postNewManager(req : any, res : any) {
-    
-} 
+function postNewManager(req: any, res: any) {}
+
+module.exports = {
+  getUsers,
+  getUserPrevileges,
+  updateUserPrevileges,
+};

@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 
-export function getReports(req: any, res: any) {
+function getReports(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -28,7 +28,7 @@ export function getReports(req: any, res: any) {
   );
 }
 
-export function postReport(req: any, res: any) {
+function postReport(req: any, res: any) {
   let connection = req.connection;
   let session = req.session;
   var queryParam = [
@@ -57,7 +57,7 @@ export function postReport(req: any, res: any) {
   );
 }
 
-export function getInvoices(req: any, res: any) {
+function getInvoices(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -87,7 +87,7 @@ export function getInvoices(req: any, res: any) {
   );
 }
 
-export function postInvoice(req: any, res: any) {
+function postInvoice(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   var queryParam = [
@@ -116,7 +116,7 @@ export function postInvoice(req: any, res: any) {
   );
 }
 
-export function getDeliveryManDetails(req: any, res: any) {
+function getDeliveryManDetails(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   var query =
@@ -152,7 +152,7 @@ export function getDeliveryManDetails(req: any, res: any) {
   );
 }
 
-export function postDeliveryManDetail(req: any, res: any) {
+function postDeliveryManDetail(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   var queryParam = [
@@ -211,7 +211,7 @@ export function postDeliveryManDetail(req: any, res: any) {
   );
 }
 
-export function getPhamacistsDetails(req: any, res: any) {
+function getPhamacistsDetails(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   var query = "select * from pharmacists where added_by = ?";
@@ -245,7 +245,7 @@ export function getPhamacistsDetails(req: any, res: any) {
   );
 }
 
-export function postPharmacistDetails(req: any, res: any) {
+function postPharmacistDetails(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -327,7 +327,7 @@ export function postPharmacistDetails(req: any, res: any) {
   );
 }
 
-export function getManagers(req: any, res: any) {
+function getManagers(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -360,7 +360,7 @@ export function getManagers(req: any, res: any) {
   );
 }
 
-export async function postManager(req: any, res: any) {
+async function postManager(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].role !== 1) {
@@ -425,7 +425,7 @@ export async function postManager(req: any, res: any) {
   );
 }
 
-export function getDashboardDetails(req : any, res : any) {
+function getDashboardDetails(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -436,7 +436,7 @@ export function getDashboardDetails(req : any, res : any) {
       session[req.headers.authorization].pharmacy,
       session[req.headers.authorization].username,
     ],
-    (err : any, result : any, fields : any) => {
+    (err: any, result: any, fields: any) => {
       if (err) {
         console.log(err);
         res.status(200).send({
@@ -463,3 +463,17 @@ export function getDashboardDetails(req : any, res : any) {
     }
   );
 }
+
+module.exports = {
+  getReports,
+  postReport,
+  getInvoices,
+  postInvoice,
+  getDeliveryManDetails,
+  postDeliveryManDetail,
+  getPhamacistsDetails,
+  postPharmacistDetails,
+  getManagers,
+  postManager,
+  getDashboardDetails,
+};

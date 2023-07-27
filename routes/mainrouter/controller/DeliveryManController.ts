@@ -1,4 +1,4 @@
-export function getApprovedItems(req: any, res: any) {
+function getApprovedItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -31,7 +31,7 @@ export function getApprovedItems(req: any, res: any) {
   );
 }
 
-export function pickupOrder(req: any, res: any) {
+function pickupOrder(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -59,7 +59,7 @@ export function pickupOrder(req: any, res: any) {
   );
 }
 
-export function getDeliveryOrders(req: any, res: any) {
+function getDeliveryOrders(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -94,3 +94,9 @@ export function getDeliveryOrders(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  getApprovedItems,
+  pickupOrder,
+  getDeliveryOrders,
+};

@@ -1,7 +1,7 @@
-var nodemailer = require("nodemailer");
-var mysql = require("mysql");
-var mysql2 = require("mysql2");
-var cors = require("cors");
+const nodemailer = require("nodemailer");
+const mysql = require("mysql");
+const mysql2 = require("mysql2");
+const cors = require("cors");
 require("dotenv").config();
 
 export function getConnection() {
@@ -53,3 +53,10 @@ export function getAllowedUrls() {
     "/check-username",
   ];
 }
+
+module.exports = {
+  getConnection,
+  getTransporterData,
+  useCors,
+  getAllowedUrls,
+};

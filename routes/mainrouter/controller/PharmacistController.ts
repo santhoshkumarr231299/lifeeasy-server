@@ -1,4 +1,4 @@
-export function approveOrder(req: any, res: any) {
+function approveOrder(req: any, res: any) {
   let connection = req.db;
   var queryParam1 = [req.body.username, req.body.mname, req.body.mid];
   connection.query(
@@ -36,7 +36,7 @@ export function approveOrder(req: any, res: any) {
   );
 }
 
-export function declineOrder(req: any, res: any) {
+function declineOrder(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].role !== 3) {
@@ -72,7 +72,7 @@ export function declineOrder(req: any, res: any) {
   }
 }
 
-export function getOrdersForApproval(req: any, res: any) {
+function getOrdersForApproval(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -91,7 +91,7 @@ export function getOrdersForApproval(req: any, res: any) {
           return;
         }
         let temp: any = [];
-        result.forEach((element : any) => {
+        result.forEach((element: any) => {
           temp.push({
             username: element.username,
             mid: element.mid,
@@ -104,3 +104,9 @@ export function getOrdersForApproval(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  approveOrder,
+  declineOrder,
+  getOrdersForApproval,
+};

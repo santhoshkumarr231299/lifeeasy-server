@@ -1,6 +1,6 @@
 const Razorpay = require("razorpay");
 
-export function makeOrder(req: any, res: any) {
+function makeOrder(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -23,7 +23,7 @@ export function makeOrder(req: any, res: any) {
   );
 }
 
-export function purchaseCartItems(req: any, res: any) {
+function purchaseCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   console.log("username : ", session[req.headers.authorization].username);
@@ -70,7 +70,7 @@ export function purchaseCartItems(req: any, res: any) {
   );
 }
 
-export function paymentDone(req: any, res: any) {
+function paymentDone(req: any, res: any) {
   console.log("Payment successfull : " + req.body.razorpayPaymentId);
   res.send({
     status: "success",
@@ -78,7 +78,7 @@ export function paymentDone(req: any, res: any) {
   });
 }
 
-export async function purchaseSubscriptionPlan(req: any, res: any) {
+async function purchaseSubscriptionPlan(req: any, res: any) {
   let totalPay = req.body.subscriptionType == "monthly" ? 10 : 100;
   try {
     const instance = new Razorpay({
@@ -103,7 +103,7 @@ export async function purchaseSubscriptionPlan(req: any, res: any) {
   }
 }
 
-export function activateSubscription(req: any, res: any) {
+function activateSubscription(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -128,3 +128,11 @@ export function activateSubscription(req: any, res: any) {
     }
   );
 }
+
+module.exports = {
+  makeOrder,
+  purchaseCartItems,
+  paymentDone,
+  purchaseSubscriptionPlan,
+  activateSubscription,
+};

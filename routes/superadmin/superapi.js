@@ -1,7 +1,4 @@
-const {
-  executeQueryController,
-  authController,
-} = require("./controller/SuperAdminController.ts");
+const SuperAdminController = require("./controller/SuperAdminController.ts");
 
 const express = require("express");
 const router = express.Router();
@@ -26,7 +23,7 @@ router.use(function (req, res, next) {
   }
 });
 
-router.post("/auth", authController);
-router.post("/execute", executeQueryController);
+router.post("/auth", SuperAdminController.authController);
+router.post("/execute", SuperAdminController.executeQueryController);
 
 module.exports = router;
