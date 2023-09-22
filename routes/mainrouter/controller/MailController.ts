@@ -84,8 +84,8 @@ function generateEmail(req: any, res: any) {
     (err: any, result: any, fields: any) => {
       if (!result || result.length === 0) {
         res.status(200).send({
-          status: "error",
-          message: "Username does not exists",
+          status: "success",
+          message: "OTP has been delivered to mail if username and email exists",
         });
         return;
       } else {
@@ -114,8 +114,8 @@ function generateEmail(req: any, res: any) {
           if (error) {
             console.log(error);
             res.status(200).send({
-              status: "error",
-              message: "User does not have a valid email",
+              status: "success",
+              message: "OTP has been delivered to mail if username and email exists",
             });
             return;
           } else {
@@ -123,7 +123,7 @@ function generateEmail(req: any, res: any) {
             res.setHeader(process.env.FORGOT_PASS_CHANGE_AUTH, secretKey);
             res.status(200).send({
               status: "success",
-              message: "OTP has been sent to the Associated Mail",
+              message: "OTP has been delivered to mail if username and email exists",
               // secretKey: secretKey,
             });
           }
