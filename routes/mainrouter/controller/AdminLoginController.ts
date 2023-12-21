@@ -74,7 +74,7 @@ function getUserPrevileges(req: any, res: any) {
 
 function updateUserPrevileges(req: any, res: any) {
   try {
-    let connection = req.connection;
+    let connection = req.db;
     let session = req.session;
     if (session[req.headers.authorization].role !== 1) {
       res.status(200).send({
