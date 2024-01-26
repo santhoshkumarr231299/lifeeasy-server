@@ -161,7 +161,7 @@ function loginUser(req: any, res: any) {
               role: "",
               lastAccessedScreen: 0,
               message: "failed",
-              comment: "Username does not Exist",
+              comment: "Username - Password Mismatch",
             });
           }
         } else {
@@ -170,7 +170,7 @@ function loginUser(req: any, res: any) {
             role: "",
             lastAccessedScreen: 0,
             message: "failed",
-            comment: "Username does not Exist",
+            comment: "Username - Password Mismatch",
           });
         }
       }
