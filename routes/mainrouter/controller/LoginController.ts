@@ -133,7 +133,7 @@ function loginUser(req: any, res: any) {
           if (username == req.body.username) {
             if (await bcrypt.compare(req.body.password, password)) {
               const secretKey = CommonUtil.getRandomUuid();
-              var validatedUser = {
+              let validatedUser = {
                 username: result[0].username,
                 role: result[0].role,
                 lastAccessedScreen: result[0].last_accessed,
@@ -142,7 +142,18 @@ function loginUser(req: any, res: any) {
                 DateOfSubscription: result[0].date_of_subscription,
                 message: "success",
               };
-              session[secretKey] = validatedUser;
+
+              let userSession = {
+                username: result[0].username,
+                haveAccessTo : result[0].have_access_to,
+                role: result[0].role,
+                lastAccessedScreen: result[0].last_accessed,
+                pharmacy: result[0].pharmacy_name,
+                subscriptionPack: result[0].subscription_pack,
+                DateOfSubscription: result[0].date_of_subscription,
+              };
+
+              session[secretKey] = userSession;
               console.log(`user logged in : `, validatedUser.username);
               res.setHeader(process.env.AUTH_NAME, secretKey);
               res.send(validatedUser);
