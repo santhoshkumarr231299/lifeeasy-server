@@ -100,11 +100,11 @@ app.get("/", function (req, res) {
 });
 
 //Login Controller
-app.post("/update-last-accessed", LoginController.updateLastAccessedScreen);
-app.post("/check-username", LoginController.checkUserDuplicateDetails);
-app.post("/logged-in", LoginController.isUserLoggedIn);
-app.post("/login", LoginController.loginUser);
-app.post("/new-user", LoginController.createNewUser);
+app.post("/update-last-accessed", LoginController.updateLastAccessedScreen); // [all authenticated]
+app.post("/check-username", LoginController.checkUserDuplicateDetails); // [open]
+app.post("/logged-in", LoginController.isUserLoggedIn); // [open]
+app.post("/login", LoginController.loginUser); // [open]
+app.post("/new-user", LoginController.createNewUser); // [open]
 
 //Medicine Controller
 app.post("/get-medicines", MedicineController.getMedicines); // [4]
@@ -112,8 +112,8 @@ app.post("/post-medicine", MedicineController.postMedicines); // [4]
 app.post("/get-search-medicines", MedicineController.getSearchMedicines); // [13]
 
 //Settings Controller
-app.post("/get-user-details", SettingsController.getUserDetails); // [all]
-app.post("/update-user-details", SettingsController.updateUserDetails); // [all]
+app.post("/get-user-details", SettingsController.getUserDetails); // [all authenticated]
+app.post("/update-user-details", SettingsController.updateUserDetails); // [all authenticated]
 
 //Ecommerce Cart Controller
 app.post("/get-cart-items", EcomCartController.getCartItems); // [8]
@@ -157,21 +157,21 @@ app.post("/pickup-order", DelManController.pickupOrder); // [12]
 app.post("/get-delivery-orders", DelManController.getDeliveryOrders); // [12]
 
 //Mail Controller
-app.post("/security/verify-email", MailController.verifyEmail); // [common]
-app.post("/security/generate-email", MailController.generateEmail); // [common]
+app.post("/security/verify-email", MailController.verifyEmail); // [open]
+app.post("/security/generate-email", MailController.generateEmail); // [open]
 
 //Password Controller
-app.post("/update-pass", PasswordController.updatePassword); // [common]
-app.post("/forgot-pass-change", PasswordController.forgotPasswordChange); // [common]
+app.post("/update-pass", PasswordController.updatePassword); // [all authenticated]
+app.post("/forgot-pass-change", PasswordController.forgotPasswordChange); // [open]
 
 //LogOut Controller
-app.post("/logout", LogOutController.logoutUser); // [common]
+app.post("/logout", LogOutController.logoutUser); // [all authenticated]
 
 //Payment Controller
 app.post("/make-order", PaymentController.makeOrder); // [8]
 app.post("/payment/orders", PaymentController.purchaseCartItems); // [8]
 app.post("/payment/success", PaymentController.paymentDone); // [8]
-app.post("/payment/subscription", PaymentController.purchaseSubscriptionPlan); // except [8]
-app.post("/activate-subscription", PaymentController.activateSubscription); // except [8]
+app.post("/payment/subscription", PaymentController.purchaseSubscriptionPlan); // except [8] - added in all authticated (revaluate)
+app.post("/activate-subscription", PaymentController.activateSubscription); // except [8] - added in all authticated (revaluate)
 
 module.exports = app;
