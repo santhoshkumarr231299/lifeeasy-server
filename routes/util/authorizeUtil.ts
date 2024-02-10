@@ -17,29 +17,31 @@ enum apiScreens {
 }
 
 const apiScreenCodes : any[] = [
-  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/activate-subscription", "/logout" ] },
-  { [apiScreens.Dashboard] : ["/get-dashboard-details"] },
-  { [apiScreens.Invoices] : ["/get-invoices", "/get-invoices"] },
-  { [apiScreens.Managers] : ["/get-managers", "/post-new-manager"] },
-  { [apiScreens.Medicines] : ["/get-medicines", "/post-medicine"] },
-  { [apiScreens.Pharmacists] : ["/get-pharmacists-details" , "/post-pharmacist-details"] },
-  { [apiScreens.DeliveryMen] : ["/get-delivery-men-details", "/post-delivery-man-details"] },
-  { [apiScreens.SalesReport] : []},
-  { [apiScreens.Ecommerce] : ["/get-cart-items", "/get-cart-items-count", "/update-cart-items", "/delete-cart-items", "/add-to-cart", "/make-order", "/payment/orders", "/payment/success"] },
-  { [apiScreens.Reports] : ["/get-reports", "/post-report"] },
-  { [apiScreens.AssignPreviliges] : ["/get-users", "/get-user-previleges", "/update-user-previleges"] },
-  { [apiScreens.PharmacistApproval] : ["/approve-order", "/decline-orders", "/get-ordered-items-for-approval"] },
-  { [apiScreens.OrderPickup] : ["/get-approved-items", "/pickup-order", "/get-delivery-orders"] },
-  { [apiScreens.SearchMedicines] : ["/get-search-medicines"] },
-  { [apiScreens.OrgChat] : [] }
+  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/activate-subscription", "/logout" ], prefix : "" },
+  { [apiScreens.Dashboard] : ["/get-dashboard-details"], prefix : "" },
+  { [apiScreens.Invoices] : ["/get-invoices", "/get-invoices"], prefix : "" },
+  { [apiScreens.Managers] : ["/get-managers", "/post-new-manager"], prefix : "" },
+  { [apiScreens.Medicines] : ["/get-medicines", "/post-medicine"], prefix : "" },
+  { [apiScreens.Pharmacists] : ["/get-pharmacists-details" , "/post-pharmacist-details"], prefix : "" },
+  { [apiScreens.DeliveryMen] : ["/get-delivery-men-details", "/post-delivery-man-details"], prefix : "" },
+  { [apiScreens.SalesReport] : [], prefix : ""},
+  { [apiScreens.Ecommerce] : ["/get-cart-items", "/get-cart-items-count", "/update-cart-items", "/delete-cart-items", "/add-to-cart", "/make-order", "/payment/orders", "/payment/success"], prefix : "" },
+  { [apiScreens.Reports] : ["/get-reports", "/post-report"], prefix : "" },
+  { [apiScreens.AssignPreviliges] : ["/get-users", "/get-user-previleges", "/update-user-previleges"], prefix : "" },
+  { [apiScreens.PharmacistApproval] : ["/approve-order", "/decline-orders", "/get-ordered-items-for-approval"], prefix : "" },
+  { [apiScreens.OrderPickup] : ["/get-approved-items", "/pickup-order", "/get-delivery-orders"], prefix : "" },
+  { [apiScreens.SearchMedicines] : ["/get-search-medicines"], prefix : "" },
+  { [apiScreens.OrgChat] : [], prefix : "" }
 ];
 
 let apiScreenCodesMap : Map<string, string> = new Map();
 
 apiScreenCodes.forEach((obj : any) => {
-  const screenKey : string = Object.keys(obj)[0].toString();
+  console.log("Updating authorization Enpoints...");
+  const screenKey : string = Object.keys(obj)[0];
+  const prefixUrl : string = obj.prefix;
   obj[screenKey].forEach((url : string) => {
-      apiScreenCodesMap.set(url, screenKey);
+      apiScreenCodesMap.set(prefixUrl + url, screenKey);
   })
 });
 
