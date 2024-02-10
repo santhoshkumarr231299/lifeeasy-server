@@ -66,6 +66,8 @@ schdule.scheduleJob("0 3 * * *", () => {
   }
 });
 
+
+//filter
 app.use(function (req, res, next) {
   if (AllowedUrls.filter((url) => url == req.url).length > 0) {
     req.session = session;
@@ -85,6 +87,7 @@ app.use(function (req, res, next) {
         status: "failed",
         message: "Unauthorized Content",
       });
+      return;
     }
     next();
   } else {

@@ -47,7 +47,7 @@ apiScreenCodes.forEach((obj : any) => {
 
 function authorizeEndpoint(req : any) {
     const haveAccessTo = req.session[req.headers.authorization].haveAccessTo;
-    if(apiScreenCodesMap.has(req.url) && haveAccessTo.includes(apiScreenCodesMap.get(req.url)?.toString())) {
+    if(apiScreenCodesMap.has(req.url) && haveAccessTo.includes(apiScreenCodesMap.get(req.url))) {
       return true;
     } else {
         return false;
