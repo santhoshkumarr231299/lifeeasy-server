@@ -24,7 +24,7 @@ app.use(StartupController.useCors());
 
 var connection = StartupController.getConnection();
 
-var AllowedUrls = StartupController.getAllowedUrls();
+var AllowedUrls = AuthorizationUtil.getAllowedUrls();
 
 var session = new Map();
 
