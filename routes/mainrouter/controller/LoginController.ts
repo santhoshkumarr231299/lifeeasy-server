@@ -88,18 +88,14 @@ function isUserLoggedIn(req: any, res: any) {
               DateOfSubscription: result[0].date_of_subscription,
             });
           } else {
-            res.status(200).send({
-              username: "",
-            });
+            res.status(200).send({});
           }
         }
       );
     }
   } catch (e) {
     console.log(e);
-    res.status(200).send({
-      username: "",
-    });
+    res.status(200).send({});
   }
 }
 
@@ -180,7 +176,6 @@ function loginUser(req: any, res: any) {
   } catch (e) {
     console.log("/login : ", e);
     res.status(200).send({
-      username: "",
       message: "failed",
       comment: "Failed to Login - try again later",
     });
