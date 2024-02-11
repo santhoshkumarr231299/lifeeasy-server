@@ -66,9 +66,7 @@ function isUserLoggedIn(req: any, res: any) {
       CommonUtil.isUndefined(req.headers.authorization) ||
       CommonUtil.isUndefined(session[req.headers.authorization])
     ) {
-      res.status(200).send({
-        username: "",
-      });
+      res.status(200).send({});
     } else {
       connection.query(
         "select * from users where username = ?  and status = 1",
@@ -115,7 +113,7 @@ function updateLastAccessedScreen(req: any, res: any) {
   );
 }
 
-function loginUser(req: any, res: any) {
+async function loginUser(req: any, res: any) {
   try {
     let connection = req.db;
     let session = req.session;

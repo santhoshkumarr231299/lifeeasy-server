@@ -396,14 +396,13 @@ async function postManager(req: any, res: any) {
       } else {
         var queryParam = [
           req.body.username,
-          hashedPassword,
           req.body.email,
           req.body.username,
           req.body.address,
           session[req.headers.authorization].username,
         ];
         connection.query(
-          "insert into managers (username, password, email, branch_id, address, pharmacy_name) values (?,?,?,(select u.branch_id from users u where u.username = ?),?, (select uuu.pharmacy_name from users uuu where uuu.username = ?))",
+          "insert into managers (username, email, branch_id, address, pharmacy_name) values (?,?,(select u.branch_id from users u where u.username = ?),?, (select uuu.pharmacy_name from users uuu where uuu.username = ?))",
           queryParam,
           (err: any, result: any, fields: any) => {
             if (err) {
