@@ -159,27 +159,18 @@ function loginUser(req: any, res: any) {
               res.send(validatedUser);
             } else {
               res.status(200).send({
-                username: "",
-                role: "",
-                lastAccessedScreen: 0,
                 message: "failed",
                 comment: "Username - Password Mismatch",
               });
             }
           } else {
             res.status(200).send({
-              username: "",
-              role: "",
-              lastAccessedScreen: 0,
               message: "failed",
               comment: "Username - Password Mismatch",
             });
           }
         } else {
           res.status(200).send({
-            username: "",
-            role: "",
-            lastAccessedScreen: 0,
             message: "failed",
             comment: "Username - Password Mismatch",
           });
@@ -190,8 +181,6 @@ function loginUser(req: any, res: any) {
     console.log("/login : ", e);
     res.status(200).send({
       username: "",
-      role: "",
-      lastAccessedScreen: 0,
       message: "failed",
       comment: "Failed to Login - try again later",
     });
