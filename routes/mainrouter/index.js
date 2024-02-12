@@ -18,11 +18,15 @@ const LogOutController = require("./controller/LogOutController.ts");
 const DelManController = require("./controller/DeliveryManController.ts");
 const PharmacistController = require("./controller/PharmacistController.ts");
 const AuthorizationUtil = require("../util/authorizeUtil.ts");
+const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
 
 var connection = StartupController.getConnection();
+
+// Startup Entries
+StartupEntries.initializeStartupEntries(connection);
 
 var AllowedUrls = AuthorizationUtil.getAllowedUrls();
 
