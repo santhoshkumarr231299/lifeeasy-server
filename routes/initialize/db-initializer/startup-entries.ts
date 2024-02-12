@@ -2,9 +2,11 @@ const TableInitializer = require("./initialize-tables.ts");
 const MenuInitializer = require("./all-menus.ts");
 
 function initializeStartupEntries(connection : any) {
-    console.log("Initiating Startup Entries...");
-    TableInitializer.intiliazeAllTables(connection);
-    MenuInitializer.makeAllMenusEntry(connection);
+    if(process.env.PRODUCTION == "false") {
+        console.log("Initiating Startup Entries...");
+        TableInitializer.intiliazeAllTables(connection);
+        MenuInitializer.makeAllMenusEntry(connection);
+    }
 }
 
 
