@@ -126,7 +126,6 @@ async function loginUser(req: any, res: any) {
           let password = result[0].password;
           if (username == req.body.username) {
             if (await bcrypt.compare(req.body.password, password)) {
-              const secretKey = CommonUtil.getRandomUuid();
               let validatedUser = {
                 username: result[0].username,
                 role: result[0].role,
@@ -147,6 +146,7 @@ async function loginUser(req: any, res: any) {
                 DateOfSubscription: result[0].date_of_subscription,
               };
 
+              const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });
               session[secretKey] = userSession;
               console.log(`user logged in : `, validatedUser.username);
               res.setHeader(process.env.AUTH_NAME, secretKey);

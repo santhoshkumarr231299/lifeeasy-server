@@ -20,6 +20,8 @@ CREATE TABLE approved_items (mid varchar(256), username varchar(256), medname va
 
 CREATE TABLE cartitems (mid varchar(256), username varchar(256), medname varchar(256), quantity int, price int, pharm_name varchar(256), is_ordered int default 0);
 
+CREATE TABLE menus (id int, field_id varchar(256), field_name varchar(256));
+
 TRUNCATE approved_items;
 TRUNCATE cartitems;
 TRUNCATE delivery_men;
