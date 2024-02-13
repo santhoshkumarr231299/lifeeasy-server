@@ -19,6 +19,7 @@ const DelManController = require("./controller/DeliveryManController.ts");
 const PharmacistController = require("./controller/PharmacistController.ts");
 const AuthorizationUtil = require("../util/authorizeUtil.ts");
 const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
+const AuthData = require("./data/auth-data.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
@@ -30,16 +31,12 @@ StartupEntries.initializeStartupEntries(connection);
 
 var AllowedUrls = AuthorizationUtil.getAllowedUrls();
 
-var session = new Map();
-
-var otpRecords = new Map();
-
 app.use(
   process.env.CHAT_BASE_PATH,
   (req, res, next) => {
-    req.session = session;
+    req.session = AuthData.getSessionData();
     req.db = connection;
-    req.otpRecords = otpRecords;
+    req.otpRecords = AuthData.getOtpRecords();
     next();
   },
   chatBot
@@ -47,9 +44,9 @@ app.use(
 app.use(
   process.env.SUPER_API_BASE_PATH,
   (req, res, next) => {
-    req.session = session;
+    req.session = AuthData.getSessionData();
     req.db = connection;
-    req.otpRecords = otpRecords;
+    req.otpRecords = AuthData.getOtpRecords();
     next();
   },
   superApi
@@ -58,6 +55,7 @@ app.use(
 schdule.scheduleJob("0 * * * *", () => {
   // at 12.00 am
   console.log("Deleting OTP Records...");
+  let otpRecords = AuthData.getOtpRecords();
   for (let entry of Object.entries(otpRecords)) {
     delete otpRecords[entry[0]];
   }
@@ -65,6 +63,7 @@ schdule.scheduleJob("0 * * * *", () => {
 
 schdule.scheduleJob("0 3 * * *", () => {
   console.log("Deleting Sessions...");
+  let session = AuthData.getSessionData();
   for (let keyValue of Object.entries(session)) {
     delete session[keyValue[0]];
   }
@@ -73,19 +72,20 @@ schdule.scheduleJob("0 3 * * *", () => {
 
 //filter
 app.use(function (req, res, next) {
+  res.removeHeader("X-Powered-By");
   if (AllowedUrls.filter((url) => url == req.url).length > 0) {
-    req.session = session;
+    req.session = AuthData.getSessionData();
     req.db = connection;
-    req.otpRecords = otpRecords;
+    req.otpRecords = AuthData.getOtpRecords();
     next();
   } else if (
     req.headers.authorization &&
-    session[req.headers.authorization] &&
-    session[req.headers.authorization].username
+    AuthData.getSessionData()[req.headers.authorization] &&
+    AuthData.getSessionData()[req.headers.authorization].username
   ) {
-    req.session = session;
+    req.session = AuthData.getSessionData();
     req.db = connection;
-    req.otpRecords = otpRecords;
+    req.otpRecords = AuthData.getOtpRecords();
     if(!AuthorizationUtil.authorizeEndpoint(req)) {
       res.status(403).send({
         status: "failed",

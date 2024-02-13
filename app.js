@@ -8,6 +8,7 @@ var indexRouter = require("./routes/mainrouter/index");
 var usersRouter = require("./routes/users/users");
 
 var app = express();
+const lusca = require("lusca");
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -17,6 +18,23 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+//security
+app.use(
+  lusca({
+    csrf: false,
+    // csp: {
+    //   /* ... */
+    // },
+    xframe: "SAMEORIGIN",
+    // p3p: "ABCDEF",
+    // hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    xssProtection: true,
+    nosniff: true,
+    referrerPolicy: "same-origin",
+  })
+);
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);

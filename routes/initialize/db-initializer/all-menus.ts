@@ -1,5 +1,5 @@
 const allMenus = [
-    {
+      {
         id: 1,
         fieldId: "[1]",
         fieldName: "Dashboard",
@@ -53,6 +53,16 @@ const allMenus = [
         id: 12,
         fieldId: "[12]",
         fieldName: "Orders Pickup",
+      },
+      {
+        id: 13,
+        fieldId: "[13]",
+        fieldName: "Medicine Details",
+      },
+      {
+        id: 14,
+        fieldId: "[14]",
+        fieldName: "Chat with Organization",
       },
 ]
 
