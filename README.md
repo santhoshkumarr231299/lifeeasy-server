@@ -8,7 +8,7 @@ deployed website - client(React JS) : https://app.netlify.com/
 
 # ENVIRONMENT VARIABLES
 
-PRODUCTION=
+PRODUCTION=\
 PORT=
 MAIL_AUTH_USERNAME=
 MAIL_AUTH_PASSWORD=
