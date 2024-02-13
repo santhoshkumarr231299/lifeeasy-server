@@ -17,25 +17,21 @@ const PasswordController = require("./controller/PasswordController.ts");
 const LogOutController = require("./controller/LogOutController.ts");
 const DelManController = require("./controller/DeliveryManController.ts");
 const PharmacistController = require("./controller/PharmacistController.ts");
-const AuthorizationUtil = require("../util/authorizeUtil.ts");
 const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
 const AuthData = require("./data/auth-data.ts");
+const AuthFilter = require("./filters/auth-filter.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
 
-var connection = StartupController.getConnection();
-
 // Startup Entries
-StartupEntries.initializeStartupEntries(connection);
-
-var AllowedUrls = AuthorizationUtil.getAllowedUrls();
+StartupEntries.initializeStartupEntries(StartupController.getConnection());
 
 app.use(
   process.env.CHAT_BASE_PATH,
   (req, res, next) => {
     req.session = AuthData.getSessionData();
-    req.db = connection;
+    req.db = StartupController.getConnection();
     req.otpRecords = AuthData.getOtpRecords();
     next();
   },
@@ -45,7 +41,7 @@ app.use(
   process.env.SUPER_API_BASE_PATH,
   (req, res, next) => {
     req.session = AuthData.getSessionData();
-    req.db = connection;
+    req.db = StartupController.getConnection();
     req.otpRecords = AuthData.getOtpRecords();
     next();
   },
@@ -71,36 +67,7 @@ schdule.scheduleJob("0 3 * * *", () => {
 
 
 //filter
-app.use(function (req, res, next) {
-  res.removeHeader("X-Powered-By");
-  if (AllowedUrls.filter((url) => url == req.url).length > 0) {
-    req.session = AuthData.getSessionData();
-    req.db = connection;
-    req.otpRecords = AuthData.getOtpRecords();
-    next();
-  } else if (
-    req.headers.authorization &&
-    AuthData.getSessionData()[req.headers.authorization] &&
-    AuthData.getSessionData()[req.headers.authorization].username
-  ) {
-    req.session = AuthData.getSessionData();
-    req.db = connection;
-    req.otpRecords = AuthData.getOtpRecords();
-    if(!AuthorizationUtil.authorizeEndpoint(req)) {
-      res.status(403).send({
-        status: "failed",
-        message: "Unauthorized Content",
-      });
-      return;
-    }
-    next();
-  } else {
-    res.status(403).send({
-      status: "failed",
-      message: "Unauthorized Content",
-    });
-  }
-});
+app.use(AuthFilter.checkAuth);
 
 app.get("/", function (req, res) {
   res.send("You are not authorized...");
