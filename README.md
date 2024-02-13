@@ -1,4 +1,4 @@
-# pharmsimple-server
+# lifeeasy-server
 
 website - online : https://lifeeasyoff.netlify.app/login
 
