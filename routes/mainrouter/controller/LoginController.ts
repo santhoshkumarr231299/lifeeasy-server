@@ -1,6 +1,7 @@
 const CommonUtil = require("../../util/CommonUtil.ts");
 const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
+const AuthUtil = require("./../../util/AuthUtil.ts");
 
 const transporter = StartupController.getTransporterData();
 
@@ -117,40 +118,50 @@ async function loginUser(req: any, res: any) {
   try {
     let connection = req.db;
     let session = req.session;
-    connection.query(
-      "select * from users where username = ?  and status = 1",
-      [req.body.username],
-      async (err: any, result: any, fields: any) => {
-        if (result && result.length == 1) {
-          let username = result[0].username;
-          let password = result[0].password;
-          if (username == req.body.username) {
-            if (await bcrypt.compare(req.body.password, password)) {
-              let validatedUser = {
-                username: result[0].username,
-                role: result[0].role,
-                lastAccessedScreen: result[0].last_accessed,
-                pharmacy: result[0].pharmacy_name,
-                subscriptionPack: result[0].subscription_pack,
-                DateOfSubscription: result[0].date_of_subscription,
-                message: "success",
-              };
-
-              let userSession = {
-                username: result[0].username,
-                haveAccessTo : result[0].have_access_to,
-                role: result[0].role,
-                lastAccessedScreen: result[0].last_accessed,
-                pharmacy: result[0].pharmacy_name,
-                subscriptionPack: result[0].subscription_pack,
-                DateOfSubscription: result[0].date_of_subscription,
-              };
-
-              const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });
-              session[secretKey] = userSession;
-              console.log(`user logged in : `, validatedUser.username);
-              res.setHeader(process.env.AUTH_NAME, secretKey);
-              res.send(validatedUser);
+    if (
+      CommonUtil.isUndefined(req.headers.authorization) ||
+      CommonUtil.isUndefined(session[req.headers.authorization])
+    ) {
+      connection.query(
+        "select * from users where username = ?  and status = 1",
+        [req.body.username],
+        async (err: any, result: any, fields: any) => {
+          if (result && result.length == 1) {
+            let username = result[0].username;
+            let password = result[0].password;
+            if (username == req.body.username) {
+              if (await bcrypt.compare(req.body.password, password)) {
+                let validatedUser = {
+                  username: result[0].username,
+                  role: result[0].role,
+                  lastAccessedScreen: result[0].last_accessed,
+                  pharmacy: result[0].pharmacy_name,
+                  subscriptionPack: result[0].subscription_pack,
+                  DateOfSubscription: result[0].date_of_subscription,
+                  message: "success",
+                };
+  
+                let userSession = {
+                  username: result[0].username,
+                  haveAccessTo : result[0].have_access_to,
+                  role: result[0].role,
+                  lastAccessedScreen: result[0].last_accessed,
+                  pharmacy: result[0].pharmacy_name,
+                  subscriptionPack: result[0].subscription_pack,
+                  DateOfSubscription: result[0].date_of_subscription,
+                };
+  
+                const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });
+                session[secretKey] = userSession;
+                console.log(`user logged in : `, validatedUser.username);
+                res.setHeader(process.env.AUTH_NAME, secretKey);
+                res.send(validatedUser);
+              } else {
+                res.status(200).send({
+                  message: "failed",
+                  comment: "Username - Password Mismatch",
+                });
+              }
             } else {
               res.status(200).send({
                 message: "failed",
@@ -163,14 +174,34 @@ async function loginUser(req: any, res: any) {
               comment: "Username - Password Mismatch",
             });
           }
-        } else {
-          res.status(200).send({
-            message: "failed",
-            comment: "Username - Password Mismatch",
-          });
         }
-      }
-    );
+      );
+    } else {
+      connection.query(
+        "select * from users where username = ?  and status = 1",
+        [session[req.headers.authorization].username],
+        (err: any, result: any, fields: any) => {
+          if (result && result.length === 1) {
+            let validatedUser = {
+              username: result[0].username,
+              role: result[0].role,
+              lastAccessedScreen: result[0].last_accessed,
+              pharmacy: result[0].pharmacy_name,
+              subscriptionPack: result[0].subscription_pack,
+              DateOfSubscription: result[0].date_of_subscription,
+              message: "success",
+            };
+            res.status(200).send(validatedUser);
+          } else {
+            AuthUtil.deleteUserSession(session[req.headers.authorization].username, session);
+            res.status(200).send({
+              message: "failed",
+              comment: "Try login again",
+            });
+          }
+        }
+      );
+    }
   } catch (e) {
     console.log("/login : ", e);
     res.status(200).send({

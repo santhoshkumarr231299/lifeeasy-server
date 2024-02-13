@@ -2,11 +2,11 @@
 
  var otpRecords = new Map();
 
- function getSessionData() : any {
+ function getSessionData(){
     return session;
  }
 
- function getOtpRecords() : any {
+ function getOtpRecords() {
     return otpRecords;
  }
 
