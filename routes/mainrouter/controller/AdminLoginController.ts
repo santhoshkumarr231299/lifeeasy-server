@@ -61,10 +61,18 @@ function getUserPrevileges(req: any, res: any) {
           message: "Something went wrong",
         });
       } else {
+        let userPrevileges : string = result[0].have_access_to;
+        console.log(userPrevileges);
+        let userPrevArr : string[]  = userPrevileges.replaceAll("[", "").replaceAll("]", " ").split(" ").filter((item : string) => item != "");
+        console.log(userPrevArr);
+        let userPrevArrNum : number[] = [];
+        userPrevArr.forEach(item => {
+          userPrevArrNum.push(Number(item));
+        });
         res.status(200).send({
           status: "success",
           message: "User Previlges",
-          userPrevileges: result[0].have_access_to,
+          userPrevileges: userPrevArrNum,
           userStatus: result[0].status == 1 ? true : false,
         });
       }
@@ -86,10 +94,15 @@ function updateUserPrevileges(req: any, res: any) {
     let query: string;
     let list: any[];
     if (req.body.userStatus) {
+      let userPreviliges : string = "";
+      let userPrevArr : number[] = req.body.userPrevileges;
+      userPrevArr.forEach((screenCode : number) => {
+        userPreviliges += "[" + screenCode + "]";
+      });
       query =
         "update users set have_access_to = ?, last_accessed = ?, status = 1 where username = ?";
       list = [
-        req.body.userPrevileges,
+        userPreviliges,
         req.body.lastAccessedScreen,
         req.body.username,
       ];
