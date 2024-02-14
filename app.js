@@ -9,6 +9,12 @@ var usersRouter = require("./routes/users/users");
 
 var app = express();
 const lusca = require("lusca");
+const rateLimiter = require("express-rate-limit");
+const ipfilter = require("express-ipfilter").IpFilter;
+
+// IP Filtering
+const ips = [];
+const ipfilterMidilware = ipfilter(ips, { mode : "deny" });
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -20,6 +26,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 //security
+
+//Rate Limiting
+const limiter = rateLimiter({
+  windowMs : 15*60*1000,
+  max : 100,
+  message : "Too many requests from this IP, please try again in a few minutes",
+});
+
+app.use(limiter);
+app.use(ipfilterMidilware);
+
 app.use(
   lusca({
     csrf: false,
