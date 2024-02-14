@@ -62,9 +62,7 @@ function getUserPrevileges(req: any, res: any) {
         });
       } else {
         let userPrevileges : string = result[0].have_access_to;
-        console.log(userPrevileges);
         let userPrevArr : string[]  = userPrevileges.replaceAll("[", "").replaceAll("]", " ").split(" ").filter((item : string) => item != "");
-        console.log(userPrevArr);
         let userPrevArrNum : number[] = [];
         userPrevArr.forEach(item => {
           userPrevArrNum.push(Number(item));
