@@ -3,6 +3,7 @@ const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 const AuthUtil = require("./../../util/AuthUtil.ts");
 const AuthorizeUtil = require("../../util/authorizeUtil.ts");
+const Validator = require("../../util/validators.ts");
 
 const transporter = StartupController.getTransporterData();
 
@@ -226,6 +227,17 @@ function createNewUser(req: any, res: any) {
   let session = req.session;
   let otpRecords = req.otpRecords;
   let newUserAuthKey: string = process.env.NEW_USER_AUTH_KEY || "";
+
+  let validationMessage : string= validateNewUser(req);
+  if(validationMessage !== "") {
+    res.status(200).send({
+      status: "danger",
+      message: validationMessage,
+    });
+    return;
+  }
+
+
   connection.query(
     "select * from users where username = ?",
     [req.body.username],
@@ -375,6 +387,32 @@ function createNewUser(req: any, res: any) {
       }
     }
   );
+}
+
+const validateNewUser = (req : any) => {
+  let valid = Validator.validateNewUser(req.body.username);
+  if(valid != "") {
+    return valid;
+  }
+  valid = Validator.validatePassword(req.body.password);
+  if(valid != "") {
+    return valid;
+  }
+  valid = Validator.validateEmail(req.body.email);
+  if(valid != "") {
+    return valid;
+  }
+  valid = Validator.validatePhoneNumber(req.body.mobileNumber);
+  if(valid != "") {
+    return valid;
+  }
+  if(req.body.pharmacyName !== "") {
+    valid = Validator.validatePharmacyName(req.body.pharmacyName);
+    if(valid != "") {
+      return valid;
+    }
+  }
+  return "";
 }
 
 module.exports = {
