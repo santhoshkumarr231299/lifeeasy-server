@@ -83,6 +83,7 @@ app.post("/new-user", LoginController.createNewUser); // [open]
 //Medicine Controller
 app.post("/get-medicines", MedicineController.getMedicines); // [4]
 app.post("/post-medicine", MedicineController.postMedicines); // [4]
+app.post("/medicine/upload", MedicineController.uploadMedicineImage); // [4]
 app.post("/get-search-medicines", MedicineController.getSearchMedicines); // [13]
 
 //Settings Controller
@@ -106,7 +107,7 @@ app.post("/get-dashboard-details", OrgLoginController.getDashboardDetails); // [
 app.post("/get-reports", OrgLoginController.getReports); // [9]
 app.post("/post-report", OrgLoginController.postReport); // [9]
 app.post("/get-invoices", OrgLoginController.getInvoices); // [2]
-app.post("c", OrgLoginController.postInvoice); // [2]
+app.post("/post-invoice", OrgLoginController.postInvoice); // [2]
 app.post("/get-delivery-men-details", OrgLoginController.getDeliveryManDetails); // [6]
 app.post(
   "/post-delivery-man-details",

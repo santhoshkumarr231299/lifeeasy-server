@@ -29,8 +29,8 @@ app.use(cookieParser());
 
 //Rate Limiting
 const limiter = rateLimiter({
-  windowMs : 15*60*1000,
-  max : 100,
+  windowMs : 5*60*1000, // 5 minutes
+  max : 1000, // requests allowed the windowMs time
   message : "Too many requests from this IP, please try again in a few minutes",
 });
 

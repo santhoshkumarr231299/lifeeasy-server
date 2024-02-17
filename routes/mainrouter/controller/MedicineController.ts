@@ -138,8 +138,13 @@ function getSearchMedicines(req: any, res: any) {
   );
 }
 
+function uploadMedicineImage(req : any, res : any) {
+
+}
+
 module.exports = {
   getMedicines,
   postMedicines,
   getSearchMedicines,
+  uploadMedicineImage
 };

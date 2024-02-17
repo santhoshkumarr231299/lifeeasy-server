@@ -193,7 +193,7 @@ async function loginUser(req: any, res: any) {
             };
             res.status(200).send(validatedUser);
           } else {
-            AuthUtil.deleteUserSession(session[req.headers.authorization].username, session);
+            AuthUtil.deleteProvidedSession(req.headers.authorization, session);
             res.status(200).send({
               message: "failed",
               comment: "Try login again",

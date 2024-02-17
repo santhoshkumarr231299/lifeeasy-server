@@ -21,7 +21,7 @@ const apiScreenCodes : any[] = [
   { [apiScreens.Dashboard] : ["/get-dashboard-details"], prefix : "" },
   { [apiScreens.Invoices] : ["/get-invoices", "/get-invoices"], prefix : "" },
   { [apiScreens.Managers] : ["/get-managers", "/post-new-manager"], prefix : "" },
-  { [apiScreens.Medicines] : ["/get-medicines", "/post-medicine"], prefix : "" },
+  { [apiScreens.Medicines] : ["/get-medicines", "/post-medicine", "/medicine/upload"], prefix : "" },
   { [apiScreens.Pharmacists] : ["/get-pharmacists-details" , "/post-pharmacist-details"], prefix : "" },
   { [apiScreens.DeliveryMen] : ["/get-delivery-men-details", "/post-delivery-man-details"], prefix : "" },
   { [apiScreens.SalesReport] : [], prefix : ""},

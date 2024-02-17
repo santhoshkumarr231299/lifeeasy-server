@@ -13,6 +13,13 @@ function deleteUserSession(username: string, session: any) {
   }
 }
 
+function deleteProvidedSession(sessionKey : string, session : any) {
+  try {
+    delete session[sessionKey];
+  } catch(e) {}
+}
+
 module.exports = {
   deleteUserSession,
+  deleteProvidedSession
 };

@@ -1,8 +1,7 @@
+const AuthUtil = require("./../../util/AuthUtil.ts");
+
 export function logoutUser(req: any, res: any) {
-  try {
-    let session = req.session;
-    delete session[req.headers.authorization];
-  } catch (err) {}
+  AuthUtil.deleteProvidedSession(req.headers.authorization, req.session);
   res.status(200).send({
     message: "failed",
   });
