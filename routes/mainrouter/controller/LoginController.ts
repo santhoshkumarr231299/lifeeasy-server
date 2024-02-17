@@ -102,13 +102,13 @@ function isUserLoggedIn(req: any, res: any) {
 
 function updateLastAccessedScreen(req: any, res: any) {
   try {
-    let session = req.session;
-    let connection = req.db;
     let lastAccessedScreen : number = req.body.lastAccessedScreen;
     if(!AuthorizeUtil.isLastAccessedScreenIncluded(lastAccessedScreen)) {
       res.send({ message: "failed" });
       return;
     }
+    let session = req.session;
+    let connection = req.db;
     connection.query(
       "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
       [
@@ -223,11 +223,6 @@ async function loginUser(req: any, res: any) {
 }
 
 function createNewUser(req: any, res: any) {
-  let connection = req.db;
-  let session = req.session;
-  let otpRecords = req.otpRecords;
-  let newUserAuthKey: string = process.env.NEW_USER_AUTH_KEY || "";
-
   let validationMessage : string= validateNewUser(req);
   if(validationMessage !== "") {
     res.status(200).send({
@@ -237,6 +232,10 @@ function createNewUser(req: any, res: any) {
     return;
   }
 
+  let connection = req.db;
+  let session = req.session;
+  let otpRecords = req.otpRecords;
+  let newUserAuthKey: string = process.env.NEW_USER_AUTH_KEY || "";
 
   connection.query(
     "select * from users where username = ?",

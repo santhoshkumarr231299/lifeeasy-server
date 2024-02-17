@@ -1,3 +1,5 @@
+const Validator = require("../../util/validators.ts");
+
 function getMedicines(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
@@ -30,6 +32,16 @@ function getMedicines(req: any, res: any) {
 }
 
 function postMedicines(req: any, res: any) {
+
+  let validationMessage = validateCreatingMedicine(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
+
   let connection = req.db;
   let session = req.session;
   var sizeOfMed = 1;
@@ -140,6 +152,18 @@ function getSearchMedicines(req: any, res: any) {
 
 function uploadMedicineImage(req : any, res : any) {
 
+}
+
+const validateCreatingMedicine = (req : any) => {
+  let valid = Validator.validateMedicineName(req.body.medName);
+    if (valid !== "") {
+      return valid;
+    }
+    valid = Validator.validateMedCompanyName(req.body.medCompany);
+    if (valid !== "") {
+      return valid;
+    }
+    return "";
 }
 
 module.exports = {
