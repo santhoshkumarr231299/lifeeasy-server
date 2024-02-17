@@ -370,6 +370,13 @@ async function postManager(req: any, res: any) {
     });
     return;
   }
+  if(req.body.password != req.body.conPassword) {
+    res.status(200).send({
+      status: "error",
+      message: "Password - Mismatch",
+    });
+    return;
+  }
   const hashedPassword = await bcrypt.hash(req.body.password, 10);
   var queryParam1 = [
     req.body.username,

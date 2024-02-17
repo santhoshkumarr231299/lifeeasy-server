@@ -55,6 +55,19 @@ function authorizeEndpoint(req : any) {
     }
 }
 
+function getApiScreenByValue(lastAccessedScreen: string): boolean {
+  for (const value of Object.values(apiScreens)) {
+      if (value === lastAccessedScreen) {
+          return true;
+      }
+  }
+  return false;
+}
+
+function isLastAccessedScreenIncluded(lastAccessedScreen : number) : boolean {
+  return getApiScreenByValue("[" + lastAccessedScreen + "]");
+}
+
 function getAllowedUrls() {
   return [
     "/new-user",
@@ -72,5 +85,6 @@ function getAllowedUrls() {
   
 module.exports = {
   authorizeEndpoint,
+  isLastAccessedScreenIncluded,
   getAllowedUrls
 };

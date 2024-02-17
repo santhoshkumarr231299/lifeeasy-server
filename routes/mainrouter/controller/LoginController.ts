@@ -2,6 +2,7 @@ const CommonUtil = require("../../util/CommonUtil.ts");
 const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 const AuthUtil = require("./../../util/AuthUtil.ts");
+const AuthorizeUtil = require("../../util/authorizeUtil.ts");
 
 const transporter = StartupController.getTransporterData();
 
@@ -99,19 +100,28 @@ function isUserLoggedIn(req: any, res: any) {
 }
 
 function updateLastAccessedScreen(req: any, res: any) {
-  let session = req.session;
-  let connection = req.db;
-  connection.query(
-    "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
-    [
-      req.body.lastAccessedScreen,
-      session[req.headers.authorization].username,
-      session[req.headers.authorization].pharmacy,
-    ],
-    (err: any, result: any, fields: any) => {
-      res.send({ message: "success" });
+  try {
+    let session = req.session;
+    let connection = req.db;
+    let lastAccessedScreen : number = req.body.lastAccessedScreen;
+    if(!AuthorizeUtil.isLastAccessedScreenIncluded(lastAccessedScreen)) {
+      res.send({ message: "failed" });
+      return;
     }
-  );
+    connection.query(
+      "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
+      [
+        lastAccessedScreen,
+        session[req.headers.authorization].username,
+        session[req.headers.authorization].pharmacy,
+      ],
+      (err: any, result: any, fields: any) => {
+        res.send({ message: "success" });
+      }
+    );
+  } catch(e) {
+    res.send({ message: "failed" });
+  }
 }
 
 async function loginUser(req: any, res: any) {
