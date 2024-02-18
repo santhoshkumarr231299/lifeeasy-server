@@ -1,4 +1,5 @@
 const AuthUtil = require("../../util/AuthUtil.ts");
+const AuthorizeUtil = require("../../util/authorizeUtil.ts");
 
 function getUsers(req: any, res: any) {
   let connection = req.db;
@@ -95,7 +96,9 @@ function updateUserPrevileges(req: any, res: any) {
       let userPreviliges : string = "";
       let userPrevArr : number[] = req.body.userPrevileges;
       userPrevArr.forEach((screenCode : number) => {
-        userPreviliges += "[" + screenCode + "]";
+        if(AuthorizeUtil.isScreenCodeSupported(screenCode)) { // Adds only, if it supports
+          userPreviliges += "[" + screenCode + "]";
+        }
       });
       query =
         "update users set have_access_to = ?, last_accessed = ?, status = 1 where username = ?";

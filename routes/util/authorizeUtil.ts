@@ -55,17 +55,17 @@ function authorizeEndpoint(req : any) {
     }
 }
 
-function getApiScreenByValue(lastAccessedScreen: string): boolean {
+function getApiScreenByValue(screenCode: string): boolean {
   for (const value of Object.values(apiScreens)) {
-      if (value === lastAccessedScreen) {
+      if (value === screenCode) {
           return true;
       }
   }
   return false;
 }
 
-function isLastAccessedScreenIncluded(lastAccessedScreen : number) : boolean {
-  return getApiScreenByValue("[" + lastAccessedScreen + "]");
+function isScreenCodeSupported(screenCode : number) : boolean {
+  return getApiScreenByValue("[" + screenCode + "]");
 }
 
 function getAllowedUrls() {
@@ -85,6 +85,6 @@ function getAllowedUrls() {
   
 module.exports = {
   authorizeEndpoint,
-  isLastAccessedScreenIncluded,
+  isScreenCodeSupported,
   getAllowedUrls
 };

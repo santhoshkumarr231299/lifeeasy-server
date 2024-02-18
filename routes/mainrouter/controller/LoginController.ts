@@ -103,12 +103,14 @@ function isUserLoggedIn(req: any, res: any) {
 function updateLastAccessedScreen(req: any, res: any) {
   try {
     let lastAccessedScreen : number = req.body.lastAccessedScreen;
-    if(!AuthorizeUtil.isLastAccessedScreenIncluded(lastAccessedScreen)) {
+    let session = req.session;
+    let connection = req.db;
+
+    if(!session[req.headers.authorization].haveAccessTo.includes(lastAccessedScreen)) {
       res.send({ message: "failed" });
       return;
     }
-    let session = req.session;
-    let connection = req.db;
+
     connection.query(
       "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
       [

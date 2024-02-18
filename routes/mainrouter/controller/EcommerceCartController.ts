@@ -50,18 +50,29 @@ function updateCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
 
-  if (String(parseInt(req.body.newQuantity)) == "NaN") {
+  let newQuantity = req.body.newQuantity;
+  let maxQuantity : number = 1000;
+  let mid : number = req.body.mid;
+
+  if (String(parseInt(req.body.newQuantity)) == "NaN" || String(parseInt(req.body.mid)) == "NaN") {
     res.status(200).send({
       status: "failed",
       message: "Quantity must a Number",
     });
   } else {
+    if(req.body.newQuantity > maxQuantity) {
+      res.status(200).send({
+        status: "failed",
+        message: "Quantity Limit Exceeded",
+      });
+      return;
+    }
     connection.query(
       "update cartitems set quantity = ? where username = ? and mid = ?",
       [
-        req.body.newQuantity,
+        newQuantity,
         session[req.headers.authorization].username,
-        req.body.mid,
+        mid,
       ],
       (err: any, result: any, fields: any) => {
         if (err) {
@@ -86,6 +97,15 @@ function updateCartItems(req: any, res: any) {
 function deleteCartItems(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
+
+  if (String(parseInt(req.body.mid)) == "NaN") {
+    res.status(200).send({
+      status: "failed",
+      message: "Mid must a Number",
+    });
+    return;
+  }
+
   connection.query(
     "delete from cartitems where username = ? and mid = ?",
     [session[req.headers.authorization].username, req.body.mid],
@@ -132,17 +152,21 @@ function addToCart(req: any, res: any) {
         message: `${req.body.medName} is already in cart...`,
       });
     } else {
-      connection.query(
-        "insert into cartitems (mid, username, medname, quantity, price,pharm_name) values (?,?, ?, ?, (select m.med_rate from medicines m where mid = ?), (select distinct u.pharmacy_name from users u where u.username in (select distinct uu.added_by from medicines uu where uu.mname = ?)))",
-        [
-          req.body.mid,
-          session[req.headers.authorization].username,
-          req.body.medName,
-          req.body.quantity,
-          req.body.mid,
-          req.body.medName,
-        ],
-        (err2: any, result2: any, fields2: any) => {
+      if (String(parseInt(req.body.mid)) == "NaN" || String(parseInt(req.body.quantity)) == "NaN") {
+        res.status(200).send({
+          status: "failed",
+          message: "Quantity must a Number",
+        });
+        return;
+      }
+      let insertCartQuery = "insert into cartitems (mid, medname, price, pharm_name,username,quantity) select mid, mname, med_rate, ?, ?, ? from medicines where mid = ?";
+      let insertCartParams = [
+        session[req.headers.authorization].pharmacy,
+        session[req.headers.authorization].username,
+        req.body.quantity,
+        req.body.mid,
+      ];
+      connection.query(insertCartQuery, insertCartParams, (err2: any, result2: any, fields2: any) => {
           if (err2) {
             console.log(err2);
             res.status(200).send({

@@ -1,3 +1,5 @@
+const Validator = require("../../util/validators.ts");
+
 function getUserDetails(req: any, res: any) {
   let connection = req.db;
   connection.query(
@@ -24,6 +26,16 @@ function getUserDetails(req: any, res: any) {
 }
 
 function updateUserDetails(req: any, res: any) {
+
+  let validationMessage = validateUserDetails(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
+
   let connection = req.db;
   let session = req.session;
   if (session[req.headers.authorization].username !== req.body.username) {
@@ -61,6 +73,17 @@ function updateUserDetails(req: any, res: any) {
       }
     }
   );
+}
+
+const validateUserDetails = (req : any) : string => {
+  let validationMessage = Validator.validateUsername(req.body.username);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateEmail(req.body.email);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
+  if(validationMessage != "") return validationMessage;
+  // validate branch ID
+  return "";
 }
 
 module.exports = {
