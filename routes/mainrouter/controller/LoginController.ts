@@ -2,7 +2,6 @@ const CommonUtil = require("../../util/CommonUtil.ts");
 const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 const AuthUtil = require("./../../util/AuthUtil.ts");
-const AuthorizeUtil = require("../../util/authorizeUtil.ts");
 const Validator = require("../../util/validators.ts");
 
 const transporter = StartupController.getTransporterData();
