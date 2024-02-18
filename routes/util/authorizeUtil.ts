@@ -17,7 +17,7 @@ enum apiScreens {
 }
 
 const apiScreenCodes : any[] = [
-  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/activate-subscription", "/logout" ], prefix : "" },
+  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/payment/subscription/success", "/activate-free-trial", "/logout" ], prefix : "" },
   { [apiScreens.Dashboard] : ["/get-dashboard-details"], prefix : "" },
   { [apiScreens.Invoices] : ["/get-invoices", "/get-invoices"], prefix : "" },
   { [apiScreens.Managers] : ["/get-managers", "/post-new-manager"], prefix : "" },
@@ -25,7 +25,7 @@ const apiScreenCodes : any[] = [
   { [apiScreens.Pharmacists] : ["/get-pharmacists-details" , "/post-pharmacist-details"], prefix : "" },
   { [apiScreens.DeliveryMen] : ["/get-delivery-men-details", "/post-delivery-man-details"], prefix : "" },
   { [apiScreens.SalesReport] : [], prefix : ""},
-  { [apiScreens.Ecommerce] : ["/get-cart-items", "/get-cart-items-count", "/update-cart-items", "/delete-cart-items", "/add-to-cart", "/make-order", "/payment/orders", "/payment/success", "/get-search-medicines"], prefix : "" },
+  { [apiScreens.Ecommerce] : ["/get-cart-items", "/get-cart-items-count", "/update-cart-items", "/delete-cart-items", "/add-to-cart", "/payment/orders", "/payment/success", "/get-search-medicines"], prefix : "" },
   { [apiScreens.Reports] : ["/get-reports", "/post-report"], prefix : "" },
   { [apiScreens.AssignPreviliges] : ["/get-users", "/get-user-previleges", "/update-user-previleges"], prefix : "" },
   { [apiScreens.PharmacistApproval] : ["/approve-order", "/decline-orders", "/get-ordered-items-for-approval"], prefix : "" },

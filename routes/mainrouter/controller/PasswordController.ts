@@ -1,11 +1,20 @@
 const AuthUtil = require("../../util/AuthUtil.ts");
 const bcrypt = require("bcrypt");
 const StartupController = require("./StartupController.ts");
+const Validator = require("../../util/validators.ts");
 require("dotenv").config();
 
 const transporter = StartupController.getTransporterData();
 
 function updatePassword(req: any, res: any) {
+  let validationMessage = validatePasswordForChangePassword(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -87,6 +96,14 @@ function updatePassword(req: any, res: any) {
 
 async function forgotPasswordChange(req: any, res: any) {
   try {
+    let validationMessage = validatePasswordForForgotPassword(req);
+    if(validationMessage != "") {
+      res.status(200).send({
+        status: "error",
+        message: validationMessage,
+      });
+      return;
+    }
     let connection = req.db;
     let otpRecords = req.otpRecords;
     let session = req.session;
@@ -209,6 +226,18 @@ async function forgotPasswordChange(req: any, res: any) {
       message: "Something went wrong",
     });
   }
+}
+
+const validatePasswordForChangePassword = (req : any) => {
+  let validationMessage = Validator.validatePassword(req.body.newPass);
+  if(validationMessage != "") return validationMessage;
+  return "";
+}
+
+const validatePasswordForForgotPassword = (req : any) => {
+  let validationMessage = Validator.validatePassword(req.body.newPass);
+  if(validationMessage != "") return validationMessage;
+  return "";
 }
 
 module.exports = {

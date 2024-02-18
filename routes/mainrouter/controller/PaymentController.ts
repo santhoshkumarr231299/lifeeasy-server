@@ -70,12 +70,14 @@ function purchaseCartItems(req: any, res: any) {
   );
 }
 
-function paymentDone(req: any, res: any) {
+function paymentDoneForCartPurchase(req: any, res: any) {
   console.log("Payment successfull : " + req.body.razorpayPaymentId);
-  res.send({
-    status: "success",
-    message: "Payment successful",
-  });
+  return makeOrder(req, res);
+}
+
+function paymentDoneForSubscription(req: any, res: any) {
+  console.log("Payment successfull : " + req.body.razorpayPaymentId);
+  return activateSubscription(req, res);
 }
 
 async function purchaseSubscriptionPlan(req: any, res: any) {
@@ -129,10 +131,33 @@ function activateSubscription(req: any, res: any) {
   );
 }
 
+function activateFreeTrial(req : any, res : any) {
+  let connection = req.db;
+  let session = req.session;
+  connection.query(
+    "update users set subscription_pack = ?, date_of_subscription = now() where pharmacy_name = ?",
+    ["monthly", session[req.headers.authorization].pharmacy],
+    (err: any, result: any, fields: any) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send({
+          status: "failed",
+          message: "Some error occured",
+        });
+      } else {
+        res.send({
+          status: "success",
+          message: "Subscription Activated : Free Trial For 1 Month",
+        });
+      }
+    }
+  );
+}
+
 module.exports = {
-  makeOrder,
   purchaseCartItems,
-  paymentDone,
+  paymentDoneForCartPurchase,
   purchaseSubscriptionPlan,
-  activateSubscription,
+  paymentDoneForSubscription,
+  activateFreeTrial
 };

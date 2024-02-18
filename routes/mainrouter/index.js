@@ -143,10 +143,10 @@ app.post("/forgot-pass-change", PasswordController.forgotPasswordChange); // [op
 app.post("/logout", LogOutController.logoutUser); // [all authenticated]
 
 //Payment Controller
-app.post("/make-order", PaymentController.makeOrder); // [8]
 app.post("/payment/orders", PaymentController.purchaseCartItems); // [8]
-app.post("/payment/success", PaymentController.paymentDone); // [8]
+app.post("/payment/success", PaymentController.paymentDoneForCartPurchase); // [8]
 app.post("/payment/subscription", PaymentController.purchaseSubscriptionPlan); // except [8] - added in all authticated (revaluate)
-app.post("/activate-subscription", PaymentController.activateSubscription); // except [8] - added in all authticated (revaluate)
+app.post("/payment/subscription/success", PaymentController.paymentDoneForSubscription); // except [8] - added in all authticated (revaluate)
+app.post("/activate-free-trial", PaymentController.activateFreeTrial); // except [8] - added in all authticated (revaluate)
 
 module.exports = app;

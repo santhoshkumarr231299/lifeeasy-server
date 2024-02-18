@@ -39,37 +39,29 @@ function approveOrder(req: any, res: any) {
 function declineOrder(req: any, res: any) {
   let connection = req.db;
   let session = req.session;
-  if (session[req.headers.authorization].role !== 3) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed",
-    });
-    return;
-  } else {
-    connection.query(
-      "update cartitems set is_ordered = 2 where username = ? and is_ordered = 1 and mid = ? and medname = ?",
-      [req.body.username, req.body.mid, req.body.mname],
-      (err: any, result: any, fields: any) => {
-        if (err) {
-          console.log(err);
-          res.status(200).send({
-            status: "error",
-            message: "Something went Wrong",
-          });
-        } else if (result.changedRows == 0) {
-          res.status(200).send({
-            status: "warning",
-            message: "The medicine does not exist...",
-          });
-        } else {
-          res.status(200).send({
-            status: "success",
-            message: "Declined Successfully",
-          });
-        }
+  connection.query(
+    "update cartitems set is_ordered = 2 where username = ? and is_ordered = 1 and mid = ? and medname = ?",
+    [req.body.username, req.body.mid, req.body.mname],
+    (err: any, result: any, fields: any) => {
+      if (err) {
+        console.log(err);
+        res.status(200).send({
+          status: "error",
+          message: "Something went Wrong",
+        });
+      } else if (result.changedRows == 0) {
+        res.status(200).send({
+          status: "warning",
+          message: "The medicine does not exist...",
+        });
+      } else {
+        res.status(200).send({
+          status: "success",
+          message: "Declined Successfully",
+        });
       }
-    );
-  }
+    }
+  );
 }
 
 function getOrdersForApproval(req: any, res: any) {

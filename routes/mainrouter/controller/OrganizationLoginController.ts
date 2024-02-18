@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const Validator = require("../../util/validators.ts");
 
 function getReports(req: any, res: any) {
   let connection = req.db;
@@ -29,6 +30,16 @@ function getReports(req: any, res: any) {
 }
 
 function postReport(req: any, res: any) {
+
+  let validationMessage = validateReport(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
+
   let connection = req.connection;
   let session = req.session;
   var queryParam = [
@@ -153,6 +164,14 @@ function getDeliveryManDetails(req: any, res: any) {
 }
 
 function postDeliveryManDetail(req: any, res: any) {
+  let validationMessage = validateDeliveryMan(req);
+  if(validationMessage != ""){
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
   let connection = req.db;
   let session = req.session;
   var queryParam = [
@@ -246,6 +265,14 @@ function getPhamacistsDetails(req: any, res: any) {
 }
 
 function postPharmacistDetails(req: any, res: any) {
+  let validationMessage = validatePharmacist(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
   let connection = req.db;
   let session = req.session;
   connection.query(
@@ -361,22 +388,16 @@ function getManagers(req: any, res: any) {
 }
 
 async function postManager(req: any, res: any) {
+  let validationMessage = validateManager(req);
+  if(validationMessage != "") {
+    res.status(200).send({
+      status: "error",
+      message: validationMessage,
+    });
+    return;
+  }
   let connection = req.db;
   let session = req.session;
-  if (session[req.headers.authorization].role !== 1) {
-    res.status(200).send({
-      status: "error",
-      message: "Authorization Failed",
-    });
-    return;
-  }
-  if(req.body.password != req.body.conPassword) {
-    res.status(200).send({
-      status: "error",
-      message: "Password - Mismatch",
-    });
-    return;
-  }
   const hashedPassword = await bcrypt.hash(req.body.password, 10);
   var queryParam1 = [
     req.body.username,
@@ -468,6 +489,61 @@ function getDashboardDetails(req: any, res: any) {
       }
     }
   );
+}
+
+const validateReport = (req : any) => {
+  let validationMessage = Validator.validateReport("Title", req.body.reportTitle, 10, 50 );
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateReport("Subject", req.body.reportSubject, 20, 200);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateReport("Description", req.body.reportDesc, 50, 500);
+  if(validationMessage != "") return validationMessage;
+  return "";
+}
+
+const validateDeliveryMan = (req : any) => {
+  let validationMessage = Validator.validateUsername(req.body.name);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateEmail(req.body.email);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAddress(req.body.address);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAadhar(req.body.aadhar);
+  if(validationMessage != "") return validationMessage;
+  return "";
+}
+
+const validatePharmacist = (req : any) => {
+  let validationMessage = Validator.validateUsername(req.body.name);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateEmail(req.body.email);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAddress(req.body.address);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAadhar(req.body.aadhar);
+  if(validationMessage != "") return validationMessage;
+  return "";
+}
+
+const validateManager = (req : any) => {
+  let validationMessage = Validator.validateUsername(req.body.username);
+  if(validationMessage != "") return validationMessage;
+  if(req.body.password != req.body.conPassword) return "Password - Mismatch";
+  validationMessage = Validator.validatePassword(req.body.password);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateEmail(req.body.email);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAddress(req.body.address);
+  if(validationMessage != "") return validationMessage;
+  validationMessage = Validator.validateAadhar(req.body.aadhar);
+  if(validationMessage != "") return validationMessage;
+  return "";
 }
 
 module.exports = {

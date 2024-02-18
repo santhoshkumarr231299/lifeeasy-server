@@ -224,7 +224,7 @@ async function loginUser(req: any, res: any) {
 }
 
 function createNewUser(req: any, res: any) {
-  let validationMessage : string= validateNewUser(req);
+  let validationMessage = validateNewUser(req);
   if(validationMessage !== "") {
     res.status(200).send({
       status: "danger",
@@ -390,7 +390,7 @@ function createNewUser(req: any, res: any) {
 }
 
 const validateNewUser = (req : any) => {
-  let valid = Validator.validateNewUser(req.body.username);
+  let valid = Validator.validateUsername(req.body.username);
   if(valid != "") {
     return valid;
   }
