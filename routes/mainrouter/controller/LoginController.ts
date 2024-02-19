@@ -159,8 +159,6 @@ async function loginUser(req: any, res: any) {
                   role: result[0].role,
                   lastAccessedScreen: result[0].last_accessed,
                   pharmacy: result[0].pharmacy_name,
-                  subscriptionPack: result[0].subscription_pack,
-                  DateOfSubscription: result[0].date_of_subscription,
                 };
   
                 const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });

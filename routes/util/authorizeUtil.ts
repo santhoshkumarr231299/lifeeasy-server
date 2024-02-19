@@ -1,3 +1,5 @@
+const LicenseDetails = require("../mainrouter/controller/LicenseController.ts");
+
 enum apiScreens {
     AllAuthenticated = "",
     Dashboard = "[1]",
@@ -46,13 +48,35 @@ apiScreenCodes.forEach((obj : any) => {
   })
 });
 
-function authorizeEndpoint(req : any) {
-    const haveAccessTo = req.session[req.headers.authorization].haveAccessTo;
-    if(apiScreenCodesMap.has(req.url) && haveAccessTo.includes(apiScreenCodesMap.get(req.url))) {
-      return true;
-    } else {
-        return false;
-    }
+async function authorizeEndpoint(req : any) {
+    return new Promise(async (resolve : any, reject : any) => {
+      try {
+        const haveAccessTo = req.session[req.headers.authorization].haveAccessTo;
+        const licenseDetails = await LicenseDetails.getLicenseDetails(req);
+        const dateOfSubscription = licenseDetails.dateOfSubscription;
+        const subscriptionPack = licenseDetails.subscriptionPack;
+        if(apiScreenCodesMap.has(req.url) && haveAccessTo.includes(apiScreenCodesMap.get(req.url))) {
+          if(apiScreenCodesMap.get(req.url) != apiScreens.Ecommerce && apiScreenCodesMap.get(req.url) != apiScreens.AllAuthenticated) {
+            let today : any = new Date();
+            let DateOfSubscription : any = new Date(dateOfSubscription);
+            if(subscriptionPack == "monthly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 30) {
+              resolve(true);
+            } else if (subscriptionPack == "yearly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 365) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          } else {
+            resolve(true);
+          }
+        } else {
+          resolve(false);
+        }
+      } catch(e) {
+        console.log(e);
+        resolve(false);
+      }
+    })
 }
 
 function getApiScreenByValue(screenCode: string): boolean {
