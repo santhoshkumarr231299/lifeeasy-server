@@ -193,7 +193,7 @@ function postDeliveryManDetail(req: any, res: any) {
           message: "Something went wrong",
         });
       } else {
-        const hashedPassword = await bcrypt.hash("deliveryman", 10);
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
         var queryParam1 = [
           req.body.name,
           hashedPassword,
@@ -312,7 +312,7 @@ function postPharmacistDetails(req: any, res: any) {
                 message: "Something went wrong",
               });
             } else {
-              const hashedPassword = await bcrypt.hash("pharmacist", 10);
+              const hashedPassword = await bcrypt.hash(req.body.password, 10);
               var queryParam1 = [
                 req.body.name,
                 hashedPassword,
@@ -504,6 +504,9 @@ const validateReport = (req : any) => {
 const validateDeliveryMan = (req : any) => {
   let validationMessage = Validator.validateUsername(req.body.name);
   if(validationMessage != "") return validationMessage;
+  if(req.body.password != req.body.conPassword) return "Password - Mismatch";
+  validationMessage = Validator.validatePassword(req.body.password);
+  if(validationMessage != "") return validationMessage;
   validationMessage = Validator.validateEmail(req.body.email);
   if(validationMessage != "") return validationMessage;
   validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
@@ -517,6 +520,9 @@ const validateDeliveryMan = (req : any) => {
 
 const validatePharmacist = (req : any) => {
   let validationMessage = Validator.validateUsername(req.body.name);
+  if(validationMessage != "") return validationMessage;
+  if(req.body.password != req.body.conPassword) return "Password - Mismatch";
+  validationMessage = Validator.validatePassword(req.body.password);
   if(validationMessage != "") return validationMessage;
   validationMessage = Validator.validateEmail(req.body.email);
   if(validationMessage != "") return validationMessage;
