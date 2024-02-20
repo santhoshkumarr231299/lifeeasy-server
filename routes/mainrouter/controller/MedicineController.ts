@@ -151,7 +151,17 @@ function getSearchMedicines(req: any, res: any) {
 }
 
 function uploadMedicineImage(req : any, res : any) {
-
+  if(!req.file) {
+    res.send({
+      status : "failed",
+      message : "No images were selected"
+    })
+    return;
+  }
+  res.send({
+    status : "success",
+    message : "Uploaded successfully"
+  })
 }
 
 const validateCreatingMedicine = (req : any) => {

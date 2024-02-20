@@ -38,10 +38,17 @@ function getCartItemsCount(req: any, res: any) {
       session[req.headers.authorization].pharmacy,
     ],
     (err: any, result: any, fields: any) => {
-      res.status(200).send({
-        cartSize: result[0].total,
-        message: "success",
-      });
+      if(result) {
+        res.status(200).send({
+          cartSize: result[0].total,
+          message: "success",
+        });
+      } else {
+        res.status(200).send({
+          cartSize: 0,
+          message: "success",
+        });
+      }
     }
   );
 }

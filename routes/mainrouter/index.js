@@ -20,6 +20,7 @@ const PharmacistController = require("./controller/PharmacistController.ts");
 const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
 const AuthData = require("./data/auth-data.ts");
 const AuthFilter = require("./filters/auth-filter.ts");
+const FileUploadData = require("./data/file-upload-data.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
@@ -83,7 +84,7 @@ app.post("/new-user", LoginController.createNewUser); // [open]
 //Medicine Controller
 app.post("/get-medicines", MedicineController.getMedicines); // [4]
 app.post("/post-medicine", MedicineController.postMedicines); // [4]
-app.post("/medicine/upload", MedicineController.uploadMedicineImage); // [4]
+app.post("/medicine/upload", FileUploadData.medicineUpload.single('file'), MedicineController.uploadMedicineImage); // [4]
 app.post("/get-search-medicines", MedicineController.getSearchMedicines); // [13]
 
 //Settings Controller

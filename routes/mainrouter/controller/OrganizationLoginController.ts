@@ -30,42 +30,45 @@ function getReports(req: any, res: any) {
 }
 
 function postReport(req: any, res: any) {
-
-  let validationMessage = validateReport(req);
-  if(validationMessage != "") {
-    res.status(200).send({
-      status: "error",
-      message: validationMessage,
-    });
-    return;
-  }
-
-  let connection = req.connection;
-  let session = req.session;
-  var queryParam = [
-    session[req.headers.authorization].username,
-    session[req.headers.authorization].role,
-    req.body.reportTitle,
-    req.body.reportSubject,
-    req.body.reportDesc,
-  ];
-  connection.query(
-    "insert into reports (username, role, report_title, report_subject, report_desc, reported_date) values (?,?,?,?,?,NOW())",
-    queryParam,
-    (err: any, result: any, fields: any) => {
-      if (err) {
-        res.status(200).send({
-          status: "error",
-          message: "Something went wrong",
-        });
-      } else {
-        res.status(200).send({
-          status: "success",
-          message: "New User Values Updated successfully",
-        });
-      }
+  try {
+    let validationMessage = validateReport(req);
+    if(validationMessage != "") {
+      res.status(200).send({
+        status: "error",
+        message: validationMessage,
+      });
+      return;
     }
-  );
+
+    let connection = req.db;
+    let session = req.session;
+    var queryParam = [
+      session[req.headers.authorization].username,
+      req.body.reportTitle,
+      req.body.reportSubject,
+      req.body.reportDesc,
+    ];
+    connection.query(
+      "insert into reports (username, report_title, report_subject, report_desc, reported_date) values (?,?,?,?,NOW())",
+      queryParam,
+      (err: any, result: any, fields: any) => {
+        if (err) {
+          console.log(err);
+          res.status(200).send({
+            status: "error",
+            message: "Something went wrong",
+          });
+        } else {
+          res.status(200).send({
+            status: "success",
+            message: "Report inserted successfully",
+          });
+        }
+      }
+    );
+  } catch(e) {
+    console.log(e);
+  }
 }
 
 function getInvoices(req: any, res: any) {
@@ -492,11 +495,11 @@ function getDashboardDetails(req: any, res: any) {
 }
 
 const validateReport = (req : any) => {
-  let validationMessage = Validator.validateReport("Title", req.body.reportTitle, 10, 50 );
+  let validationMessage = Validator.validateReports("Title", req.body.reportTitle, 10, 50 );
   if(validationMessage != "") return validationMessage;
-  validationMessage = Validator.validateReport("Subject", req.body.reportSubject, 20, 200);
+  validationMessage = Validator.validateReports("Subject", req.body.reportSubject, 20, 200);
   if(validationMessage != "") return validationMessage;
-  validationMessage = Validator.validateReport("Description", req.body.reportDesc, 50, 500);
+  validationMessage = Validator.validateReports("Description", req.body.reportDesc, 50, 500);
   if(validationMessage != "") return validationMessage;
   return "";
 }
