@@ -42,21 +42,8 @@ export function useCors() {
   });
 }
 
-export function getAllowedUrls() {
-  return [
-    "/new-user",
-    "/logged-in",
-    "/forgot-pass-change",
-    "/login",
-    "/security/verify-email",
-    "/security/generate-email",
-    "/check-username",
-  ];
-}
-
 module.exports = {
   getConnection,
   getTransporterData,
   useCors,
-  getAllowedUrls,
 };

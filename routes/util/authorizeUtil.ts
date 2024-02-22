@@ -1,4 +1,5 @@
 const LicenseDetails = require("../mainrouter/controller/LicenseController.ts");
+const url = require("url");
 
 enum apiScreens {
     AllAuthenticated = "",
@@ -51,12 +52,14 @@ apiScreenCodes.forEach((obj : any) => {
 async function authorizeEndpoint(req : any) {
     return new Promise(async (resolve : any, reject : any) => {
       try {
+        const parsedUrl = url.parse(req.url);
+        const pathName = parsedUrl.pathname;
         const haveAccessTo = req.session[req.headers.authorization].haveAccessTo;
         const licenseDetails = await LicenseDetails.getLicenseDetails(req);
         const dateOfSubscription = licenseDetails.dateOfSubscription;
         const subscriptionPack = licenseDetails.subscriptionPack;
-        if(apiScreenCodesMap.has(req.url) && haveAccessTo.includes(apiScreenCodesMap.get(req.url))) {
-          if(apiScreenCodesMap.get(req.url) != apiScreens.Ecommerce && apiScreenCodesMap.get(req.url) != apiScreens.AllAuthenticated) {
+        if(apiScreenCodesMap.has(pathName) && haveAccessTo.includes(apiScreenCodesMap.get(pathName))) {
+          if(apiScreenCodesMap.get(pathName) != apiScreens.Ecommerce && apiScreenCodesMap.get(pathName) != apiScreens.AllAuthenticated) {
             let today : any = new Date();
             let DateOfSubscription : any = new Date(dateOfSubscription);
             if(subscriptionPack == "monthly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 30) {

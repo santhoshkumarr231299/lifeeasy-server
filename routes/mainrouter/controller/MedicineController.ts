@@ -1,4 +1,5 @@
 const Validator = require("../../util/validators.ts");
+const FileUpload = require("../data/file-upload-data.ts");
 
 function getMedicines(req: any, res: any) {
   let connection = req.db;
@@ -104,6 +105,7 @@ function postMedicines(req: any, res: any) {
                     res.status(200).send({
                       status: "success",
                       message: "New Medicine Added Successfully",
+                      id : sizeOfMed
                     });
                   }
                 }
@@ -151,17 +153,31 @@ function getSearchMedicines(req: any, res: any) {
 }
 
 function uploadMedicineImage(req : any, res : any) {
-  if(!req.file) {
+  try {
+    if(!req.file) {
+      res.send({
+        status : "failed",
+        message : "No images were selected"
+      })
+      return;
+    } else if (FileUpload.getFileExtensionName(req.file.originalname).toLowerCase() != ".jpg") {
+      res.send({
+        status : "failed",
+        message : "Image Extension should be jpg"
+      })
+      return;
+    }
+    res.send({
+      status : "success",
+      message : "Uploaded successfully"
+    })
+  } catch(e) {
+    console.log(e);
     res.send({
       status : "failed",
-      message : "No images were selected"
+      message : "Something went wrong"
     })
-    return;
   }
-  res.send({
-    status : "success",
-    message : "Uploaded successfully"
-  })
 }
 
 const validateCreatingMedicine = (req : any) => {
