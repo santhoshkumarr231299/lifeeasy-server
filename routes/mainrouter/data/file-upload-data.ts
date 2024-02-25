@@ -15,10 +15,9 @@ const medicineStorage = multer.diskStorage({
         if(session[req.headers.authorization] && session[req.headers.authorization].username) {
             const username : string = session[req.headers.authorization].username;
             const fileExtension : string = getFileExtensionName(file.originalname);
-            console.log(req.query.mid);
             const mid : number = req.query.mid; // send mid in the req
             if(fileExtension && fileExtension.toLowerCase() == ".jpg") {
-                cb(null, username + "-" + mid + fileExtension);
+                cb(null, mid + fileExtension);
             }
         }
     }

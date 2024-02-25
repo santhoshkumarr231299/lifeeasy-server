@@ -107,6 +107,7 @@ function getAllowedUrls() {
     "/security/verify-email",
     "/security/generate-email",
     "/forgot-pass-change",
+    "/medicine-image",
   ];
 }
   

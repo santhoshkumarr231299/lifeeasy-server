@@ -180,6 +180,11 @@ function uploadMedicineImage(req : any, res : any) {
   }
 }
 
+function serveMedicineImage(req : any, res : any) {
+  const mid : number = req.query.mid;
+  res.sendFile(mid + ".jpg", { root: 'storage/medicine-images' });
+}
+
 const validateCreatingMedicine = (req : any) => {
   let valid = Validator.validateMedicineName(req.body.medName);
     if (valid !== "") {
@@ -196,5 +201,6 @@ module.exports = {
   getMedicines,
   postMedicines,
   getSearchMedicines,
-  uploadMedicineImage
+  uploadMedicineImage,
+  serveMedicineImage
 };

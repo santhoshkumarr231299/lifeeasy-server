@@ -1,11 +1,14 @@
 const AuthData = require("./../data/auth-data.ts");
 const AuthorizationUtil = require("../../util/authorizeUtil.ts");
 const StartupController = require("./../controller/StartupController.ts");
+const url = require("url");
 
 async function checkAuth(req : any, res : any, next : any) {
   try {
     res.removeHeader("X-Powered-By");
-    if (AuthorizationUtil.getAllowedUrls().filter((url : string) => url == req.url).length > 0) {
+    const parsedUrl = url.parse(req.url);
+        const pathName = parsedUrl.pathname;
+    if (AuthorizationUtil.getAllowedUrls().filter((url : string) => url == pathName).length > 0) {
         req.session = AuthData.getSessionData();
         req.db = StartupController.getConnection();
         req.otpRecords = AuthData.getOtpRecords();

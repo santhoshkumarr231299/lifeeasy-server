@@ -86,6 +86,7 @@ app.post("/get-medicines", MedicineController.getMedicines); // [4]
 app.post("/post-medicine", MedicineController.postMedicines); // [4]
 app.post("/medicine/upload", FileUploadData.medicineUpload.single('file'), MedicineController.uploadMedicineImage); // [4]
 app.post("/get-search-medicines", MedicineController.getSearchMedicines); // [13]
+app.get("/medicine-image", MedicineController.serveMedicineImage);// [open]
 
 //Settings Controller
 app.post("/get-user-details", SettingsController.getUserDetails); // [all authenticated]
