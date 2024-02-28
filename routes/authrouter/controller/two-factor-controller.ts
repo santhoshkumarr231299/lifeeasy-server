@@ -42,7 +42,7 @@ function sendOTP(req : any, res : any) {
             console.log("Email sent - 2FA: " + result[0].email);
             res.status(200).send({
               status: "success",
-              message: "OTP has been delivered to mail",
+              message: "OTP has been delivered to the mail",
             });
           }
         });
@@ -73,7 +73,7 @@ function verifyOTP(req : any, res : any) {
         delete otpRecords[req.headers.authorization];
         res.status(200).send({
           status: "error",
-          message: "OTP expired",
+          message: "The Provided OTP is expired",
         });
         return;
       }
@@ -84,7 +84,7 @@ function verifyOTP(req : any, res : any) {
       delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
-        message: "OTP expired",
+        message: "The Provided OTP is expired",
       });
       return;
     } else if (
@@ -94,7 +94,7 @@ function verifyOTP(req : any, res : any) {
       delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
-        message: "Verify your email...",
+        message: "Please register your mail",
       });
       return;
     } else if (
@@ -108,16 +108,16 @@ function verifyOTP(req : any, res : any) {
       ) {
         res.status(200).send({
           status: "error",
-          message: "OTP expired",
+          message: "The Provided OTP is expired",
         });
         return;
       }
     } else if (
-      otpRecords[req.headers.authorization].otp !== req.body.otp
+      Number(otpRecords[req.headers.authorization].otp) !== Number(req.body.otp)
     ) {
       res.status(200).send({
         status: "error",
-        message: "Invalid OTP",
+        message: "The Provided OTP is invalid",
       });
       return;
     }
@@ -125,7 +125,7 @@ function verifyOTP(req : any, res : any) {
     session[req.headers.authorization].isTFAVerified = true;
     res.send({
         status : "success",
-        message : "Verified"
+        message : "OTP has been Verified"
     });
 }
 
