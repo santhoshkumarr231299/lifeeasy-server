@@ -20,7 +20,7 @@ enum apiScreens {
 }
 
 const apiScreenCodes : any[] = [
-  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/payment/subscription/success", "/activate-free-trial", "/logout" ], prefix : "" },
+  { [apiScreens.AllAuthenticated] : [ "/update-last-accessed", "/get-user-details", "/update-user-details", "/update-pass", "/payment/subscription", "/payment/subscription/success", "/activate-free-trial" ], prefix : "" },
   { [apiScreens.Dashboard] : ["/get-dashboard-details"], prefix : "" },
   { [apiScreens.Invoices] : ["/get-invoices", "/get-invoices"], prefix : "" },
   { [apiScreens.Managers] : ["/get-managers", "/post-new-manager"], prefix : "" },
@@ -108,6 +108,7 @@ function getAllowedUrls() {
     "/security/generate-email",
     "/forgot-pass-change",
     "/medicine-image",
+    "/logout"
   ];
 }
   

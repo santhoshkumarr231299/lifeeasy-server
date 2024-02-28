@@ -38,6 +38,10 @@ const createTables = [
     {
         tableName : "menus",
         query : "CREATE TABLE menus (id int, field_id varchar(256), field_name varchar(256))"
+    },
+    {
+        tableName : "user_auth",
+        query : "CREATE TABLE user_auth (username varchar(256), two_fa_enabled int(1))"
     }
 ];
 

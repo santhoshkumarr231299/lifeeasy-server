@@ -21,6 +21,7 @@ const StartupEntries = require("./../initialize/db-initializer/startup-entries.t
 const AuthData = require("./data/auth-data.ts");
 const AuthFilter = require("./filters/auth-filter.ts");
 const FileUploadData = require("./data/file-upload-data.ts");
+const twoFA = require("../authrouter/two-factor-auth.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
@@ -47,6 +48,17 @@ app.use(
     next();
   },
   superApi
+);
+
+app.use(
+  "/2fa",
+  (req, res, next) => {
+    req.session = AuthData.getSessionData();
+    req.db = StartupController.getConnection();
+    req.otpRecords = AuthData.getOtpRecords();
+    next();
+  },
+  twoFA
 );
 
 schdule.scheduleJob("0 * * * *", () => {

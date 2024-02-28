@@ -1,6 +1,6 @@
-const AuthData = require("./../data/auth-data.ts");
-const AuthorizationUtil = require("../../util/authorizeUtil.ts");
-const StartupController = require("./../controller/StartupController.ts");
+const AuthData = require("../../mainrouter/data/auth-data.ts");
+const AuthorizationUtil = require("../utils/tfa-authorize-util.ts");
+const StartupController = require("../../mainrouter/controller/StartupController.ts");
 const url = require("url");
 
 async function checkAuth(req : any, res : any, next : any) {
@@ -21,21 +21,22 @@ async function checkAuth(req : any, res : any, next : any) {
         req.session = AuthData.getSessionData();
         req.db = StartupController.getConnection();
         req.otpRecords = AuthData.getOtpRecords();
-        if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
+        if(!(await AuthorizationUtil.authorizeEndpoint(req))) {
           res.status(403).send({
-            status: "2fa-failed",
+              status: "failed",
+              message: "Unauthorized Content",
+          });
+          return;
+        }
+        if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
+          next();
+        } else {
+          res.status(403).send({
+            status: "failed",
             message: "Unauthorized Content",
           });
           return;
         }
-        if(!(await AuthorizationUtil.authorizeEndpoint(req))) {
-        res.status(403).send({
-            status: "failed",
-            message: "Unauthorized Content",
-        });
-        return;
-        }
-        next();
     } else {
         res.status(403).send({
         status: "failed",

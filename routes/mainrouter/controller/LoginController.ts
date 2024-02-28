@@ -86,6 +86,8 @@ function isUserLoggedIn(req: any, res: any) {
               pharmacy: session[req.headers.authorization].pharmacy,
               subscriptionPack: result[0].subscription_pack,
               DateOfSubscription: result[0].date_of_subscription,
+              isTFAEnabled :  session[req.headers.authorization].isTFAEnabled,
+              isTFAVerified : session[req.headers.authorization].isTFAVerified,
             });
           } else {
             res.status(200).send({});
@@ -135,30 +137,36 @@ async function loginUser(req: any, res: any) {
       CommonUtil.isUndefined(session[req.headers.authorization])
     ) {
       connection.query(
-        "select * from users where username = ?  and status = 1",
+        "select u.username as u_username, password, have_access_to, role, last_accessed, pharmacy_name, subscription_pack, date_of_subscription, two_fa_enabled from users u left join user_auth ua on u.username = ua.username where u.username = ? and status = 1",
         [req.body.username],
         async (err: any, result: any, fields: any) => {
+          if(err) {
+            console.log(err);
+          }
           if (result && result.length == 1) {
-            let username = result[0].username;
+            let username = result[0].u_username;
             let password = result[0].password;
             if (username == req.body.username) {
               if (await bcrypt.compare(req.body.password, password)) {
                 let validatedUser = {
-                  username: result[0].username,
+                  username: result[0].u_username,
                   role: result[0].role,
                   lastAccessedScreen: result[0].last_accessed,
                   pharmacy: result[0].pharmacy_name,
                   subscriptionPack: result[0].subscription_pack,
                   DateOfSubscription: result[0].date_of_subscription,
+                  isTFAEnabled :  result[0].two_fa_enabled ? (result[0].two_fa_enabled == 1 ? true : false) : false,
+                  isTFAVerified : false,
                   message: "success",
                 };
   
                 let userSession = {
-                  username: result[0].username,
+                  username: validatedUser.username,
                   haveAccessTo : result[0].have_access_to,
-                  role: result[0].role,
-                  lastAccessedScreen: result[0].last_accessed,
-                  pharmacy: result[0].pharmacy_name,
+                  role: validatedUser.role,
+                  pharmacy: validatedUser.pharmacy,
+                  isTFAEnabled :  validatedUser.isTFAEnabled,
+                  isTFAVerified : validatedUser.isTFAVerified,
                 };
   
                 const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });
@@ -188,17 +196,19 @@ async function loginUser(req: any, res: any) {
       );
     } else {
       connection.query(
-        "select * from users where username = ?  and status = 1",
+        "select last_accessed, date_of_subscription, subscription_pack  from users u left join user_auth ua on u.username = ua.username where u.username = ? and status = 1",
         [session[req.headers.authorization].username],
         (err: any, result: any, fields: any) => {
           if (result && result.length === 1) {
             let validatedUser = {
-              username: result[0].username,
-              role: result[0].role,
+              username: session[req.headers.authorization].username,
+              role: session[req.headers.authorization].role,
               lastAccessedScreen: result[0].last_accessed,
-              pharmacy: result[0].pharmacy_name,
+              pharmacy: session[req.headers.authorization].pharmacy_name,
               subscriptionPack: result[0].subscription_pack,
               DateOfSubscription: result[0].date_of_subscription,
+              isTFAEnabled :  session[req.headers.authorization].isTFAEnabled,
+              isTFAVerified : session[req.headers.authorization].isTFAVerified,
               message: "success",
             };
             res.status(200).send(validatedUser);
@@ -309,80 +319,79 @@ function createNewUser(req: any, res: any) {
           message: "Invalid OTP",
         });
         return;
-      } else {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        connection.query(
-          "insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)",
-          [
-            req.body.username,
-            hashedPassword,
-            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-              ? 1
-              : 2,
-            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-              ? 1
-              : 8,
-            req.body.email,
-            req.body.mobileNumber,
-            req.body.pharmacyName,
-            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-              ? 1
-              : -1,
-            req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-              ? "[1][2][3][4][5][6][7][9][10]"
-              : "[8]",
-          ],
-          (err1: any, result1: any, fields1: any) => {
-            if (err1) {
-              console.log(err1);
+      }
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      connection.query(
+        "insert into users (username, password, role, last_accessed,email,mobile_number, pharmacy_name,branch_id,have_access_to) values (?,?,?,?,?,?,?,?,?)",
+        [
+          req.body.username,
+          hashedPassword,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+            ? 1
+            : 2,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+            ? 1
+            : 8,
+          req.body.email,
+          req.body.mobileNumber,
+          req.body.pharmacyName,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+            ? 1
+            : -1,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
+            ? "[1][2][3][4][5][6][7][9][10]"
+            : "[8]",
+        ],
+        (err1: any, result1: any, fields1: any) => {
+          if (err1) {
+            console.log(err1);
+            res.status(200).send({
+              status: "danger",
+              message: "Something went wrong",
+            });
+          } else {
+            try {
+              var mailOptions = {
+                from: "PharmSimple <security-alert@pharmsimple.com>",
+                to: otpRecords[req.headers[newUserAuthKey]].mail,
+                subject: "Congratulations",
+                text:
+                  "Your PharmSimple " +
+                  (req.body.pharmacyName === "" ? "" : "Management ") +
+                  "Account has been Created Successfully",
+              };
+
+              transporter.sendMail(
+                mailOptions,
+                function (error: any, info: any) {
+                  if (error) {
+                    res.status(200).send({
+                      status: "error",
+                      message: "Enter a valid email",
+                    });
+                    return;
+                  } else {
+                    console.log("Email sent: " + req.body.email);
+                  }
+                }
+              );
+
+              delete otpRecords[req.headers[newUserAuthKey]];
+
               res.status(200).send({
-                status: "danger",
+                status: "success",
+                message: "New User Created",
+              });
+            } catch (ex) {
+              console.log("Exception while creating new user", ex);
+              res.status(200).send({
+                status: "error",
                 message: "Something went wrong",
               });
-            } else {
-              try {
-                var mailOptions = {
-                  from: "PharmSimple <security-alert@pharmsimple.com>",
-                  to: otpRecords[req.headers[newUserAuthKey]].mail,
-                  subject: "Congratulations",
-                  text:
-                    "Your PharmSimple " +
-                    (req.body.pharmacyName === "" ? "" : "Management ") +
-                    "Account has been Created Successfully",
-                };
-
-                transporter.sendMail(
-                  mailOptions,
-                  function (error: any, info: any) {
-                    if (error) {
-                      res.status(200).send({
-                        status: "error",
-                        message: "Enter a valid email",
-                      });
-                      return;
-                    } else {
-                      console.log("Email sent: " + req.body.email);
-                    }
-                  }
-                );
-
-                delete otpRecords[req.headers[newUserAuthKey]];
-
-                res.status(200).send({
-                  status: "success",
-                  message: "New User Created",
-                });
-              } catch (ex) {
-                console.log("Exception while creating new user", ex);
-                res.status(200).send({
-                  status: "error",
-                  message: "Something went wrong",
-                });
-              }
             }
           }
-        );
-      }
+        }
+      );
     }
   );
 }
