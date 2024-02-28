@@ -37,11 +37,11 @@ function verifyEmail(req: any, res: any) {
         };
 
         var mailOptions = {
-          from: "PharmSimple <security-alert@pharmsimple.com>",
+          from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() + ".com>",
           to: req.body.email,
           subject: "Verify Your Email",
           text:
-            "PharmSimple Email Verfication OTP (valid for 5 minutes) : " +
+            process.env.BRAND_NAME + " Email Verfication OTP (valid for 5 minutes) : " +
             otpRecords[secretKey].otp,
         };
 
@@ -102,11 +102,11 @@ function generateEmail(req: any, res: any) {
         };
 
         var mailOptions = {
-          from: "PharmSimple <security-alert@pharmsimple.com>",
+          from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() + ".com>",
           to: result[0].email,
           subject: "Verify Your Account",
           text:
-            "PharmSimple Account Verfication OTP (valid for 5 minutes) : " +
+            process.env.BRAND_NAME + " Account Verfication OTP (valid for 5 minutes) : " +
             otpRecords[secretKey].otp,
         };
 
