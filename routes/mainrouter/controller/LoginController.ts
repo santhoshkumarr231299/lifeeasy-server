@@ -352,11 +352,11 @@ function createNewUser(req: any, res: any) {
           } else {
             try {
               var mailOptions = {
-                from: "PharmSimple <security-alert@pharmsimple.com>",
+                from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() +".com>",
                 to: otpRecords[req.headers[newUserAuthKey]].mail,
                 subject: "Congratulations",
                 text:
-                  "Your PharmSimple " +
+                  "Your " + process.env.BRAND_NAME + " " +
                   (req.body.pharmacyName === "" ? "" : "Management ") +
                   "Account has been Created Successfully",
               };

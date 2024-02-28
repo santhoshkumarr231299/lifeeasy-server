@@ -65,7 +65,7 @@ function updatePassword(req: any, res: any) {
                   session
                 );
                 var mailOptions = {
-                  from: "PharmSimple <security-alert@pharmsimple.com>",
+                  from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() + ".com>",
                   to: email,
                   subject: "Password Changed",
                   text: "The Password of Your Account has been Changed",
@@ -191,10 +191,10 @@ async function forgotPasswordChange(req: any, res: any) {
             );
 
             var mailOptions = {
-              from: "PharmSimple <security-alert@pharmsimple.com>",
+              from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() +".com>",
               to: otpRecords[req.headers[forgotPasswordChangeAuth]].mail,
               subject: "Security Alert",
-              text: "Your PharmSimple Account Password has been Changed",
+              text: "Your " + process.env.BRAND_NAME + " Account Password has been Changed",
             };
 
             transporter.sendMail(mailOptions, function (error: any, info: any) {
