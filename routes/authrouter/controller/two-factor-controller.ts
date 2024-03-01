@@ -1,5 +1,5 @@
 const StartupController = require("../../mainrouter/controller/StartupController.ts");
-
+const authUtil = require("../../util/AuthUtil.ts");
 const transporter = StartupController.getTransporterData();
 
 function sendOTP(req : any, res : any) {
@@ -170,8 +170,114 @@ const makeEmailStared = (email : string) => {
   return result;
 }
 
+function configureTFA(req : any, res : any) {
+  let connection = req.db;
+    let otpRecords = req.otpRecords;
+    let session = req.session;
+
+    let date = new Date();
+    if (
+      otpRecords[req.headers.authorization].minute >
+      date.getMinutes()
+    ) {
+      if (
+        date.getMinutes() +
+          (60 - otpRecords[req.headers.authorization].minute) >
+        5
+      ) {
+        delete otpRecords[req.headers.authorization];
+        res.status(200).send({
+          status: "error",
+          message: "The Provided OTP is expired",
+        });
+        return;
+      }
+    } else if (
+      !req.headers.authorization ||
+      !otpRecords[req.headers.authorization]
+    ) {
+      delete otpRecords[req.headers.authorization];
+      res.status(200).send({
+        status: "error",
+        message: "The Provided OTP is expired",
+      });
+      return;
+    } else if (
+      !otpRecords[req.headers.authorization] ||
+      !otpRecords[req.headers.authorization].mail
+    ) {
+      delete otpRecords[req.headers.authorization];
+      res.status(200).send({
+        status: "error",
+        message: "Please register your mail",
+      });
+      return;
+    } else if (
+      otpRecords[req.headers.authorization].minute <
+      date.getMinutes()
+    ) {
+      if (
+        date.getMinutes() -
+          otpRecords[req.headers.authorization].minute >
+        5
+      ) {
+        res.status(200).send({
+          status: "error",
+          message: "The Provided OTP is expired",
+        });
+        return;
+      }
+    } else if (
+      Number(otpRecords[req.headers.authorization].otp) !== Number(req.body.otp)
+    ) {
+      res.status(200).send({
+        status: "error",
+        message: "The Provided OTP is invalid",
+      });
+      return;
+    }
+    if(req.url == "/enable") {
+      connection.query("insert into user_auth (username, two_fa_enabled) values (?, 1) on duplicate key update two_fa_enabled = 1", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+        if(err) {
+          console.log(err);
+          res.status(200).send({
+            status: "error",
+            message: "Something went wrong",
+          });
+        } else {
+          authUtil.deleteUserSession(session[req.headers.authorization].username, session);
+          res.send({
+            status: "success",
+            message: "Two Factor Authentication is enabled",
+          })
+        }
+      })
+    } else if(req.url == "/disable") {
+      connection.query("update user_auth set two_fa_enabled = 0 where username = ?", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+        if(err) {
+          console.log(err);
+          res.status(200).send({
+            status: "error",
+            message: "Something went wrong",
+          });
+        } else {
+          res.send({
+            status: "success",
+            message: "Two Factor Authentication is disabled",
+          })
+        }
+      })
+    } else {
+      res.send({
+        status: "success",
+        message: "Please check with the URL",
+      })
+    }
+}
+
 module.exports = {
     sendOTP,
     verifyOTP,
-    getUserDetailsForTFA
+    getUserDetailsForTFA,
+    configureTFA
 }

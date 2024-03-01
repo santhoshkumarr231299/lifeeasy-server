@@ -2,17 +2,19 @@ const Validator = require("../../util/validators.ts");
 
 function getUserDetails(req: any, res: any) {
   let connection = req.db;
+  let session = req.session;
   connection.query(
-    "select *  from users where username = ?",
-    [req.body.username],
+    "select u.username as u_username, email, mobile_number, pharmacy_name, branch_id, two_fa_enabled from users u left join user_auth ua on u.username = ua.username where u.username = ? and status = 1",
+    [session[req.headers.authorization].username],
     (err: any, result: any, fields: any) => {
       if (result) {
         res.status(200).send({
-          username: result[0].username,
+          username: result[0].u_username,
           email: result[0].email,
           mobileNumber: result[0].mobile_number,
           pharmacyName: result[0].pharmacy_name,
           branchId: result[0].branch_id,
+          isTFAEnabled : result[0].two_fa_enabled == 1 ? true : false,
           message: "success",
         });
       } else {

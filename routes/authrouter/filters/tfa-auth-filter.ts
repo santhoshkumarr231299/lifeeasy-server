@@ -28,15 +28,15 @@ async function checkAuth(req : any, res : any, next : any) {
           });
           return;
         }
-        if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
+        // if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
           next();
-        } else {
-          res.status(403).send({
-            status: "failed",
-            message: "Unauthorized Content",
-          });
-          return;
-        }
+        // } else {
+        //   res.status(403).send({
+        //     status: "failed",
+        //     message: "Unauthorized Content",
+        //   });
+        //   return;
+        // }
     } else {
         res.status(403).send({
         status: "failed",

@@ -1,31 +1,31 @@
 const createTables = [
     {
         tableName : "delivery_men",
-        query : "CREATE TABLE delivery_men (username varchar(256), email varchar(256), mobile_number varchar(20), address varchar(256), aadhar_number varchar(256), added_by varchar(256), pharmacy_name varchar(256))"
+        query : "CREATE TABLE delivery_men (username varchar(256) primary key, email varchar(256), mobile_number varchar(20), address varchar(256), aadhar_number varchar(256), added_by varchar(256), pharmacy_name varchar(256))"
     },
     {
         tableName : "invoices",
-        query : "CREATE TABLE invoices (id int, username  varchar(256), pharm_name  varchar(256), branch int, amount  varchar(15), quantity  varchar(20), invoice_date date)",
+        query : "CREATE TABLE invoices (id int primary key, username  varchar(256), pharm_name  varchar(256), branch int, amount  varchar(15), quantity  varchar(20), invoice_date date)",
     },
     {
         tableName : "managers",
-        query : "CREATE TABLE managers ( username varchar(256), email varchar(256), branch_id int, address varchar(256), pharmacy_name varchar(256))",
+        query : "CREATE TABLE managers ( username varchar(256) primary key, email varchar(256), branch_id int, address varchar(256), pharmacy_name varchar(256))",
     },
     {
         tableName : "medicines",
-        query : "CREATE TABLE medicines (username  varchar(256), mid  varchar(15), mname  varchar(256), mcompany  varchar(256), quantity  int default 0, expiry_date date, med_mrp varchar(15), med_rate varchar(15), status int default 0, med_added_date TIMESTAMP  default CURRENT_TIMESTAMP, added_by varchar(256))",
+        query : "CREATE TABLE medicines (username  varchar(256), mid  varchar(15) primary key, mname  varchar(256), mcompany  varchar(256), quantity  int default 0, expiry_date date, med_mrp varchar(15), med_rate varchar(15), status int default 0, med_added_date TIMESTAMP  default CURRENT_TIMESTAMP, added_by varchar(256))",
     }, 
     {
         tableName : "pharmacists",
-        query :  "CREATE TABLE pharmacists (username varchar(256), email varchar(256), mobile_number varchar(256), pharmacy_name varchar(256),address varchar(256), aadhar_number varchar(256), added_by varchar(256))",
+        query :  "CREATE TABLE pharmacists (username varchar(256) primary key, email varchar(256), mobile_number varchar(256), pharmacy_name varchar(256),address varchar(256), aadhar_number varchar(256), added_by varchar(256))",
     },
     {
         tableName : "reports",
-        query : "CREATE TABLE reports (id int, username varchar(256), pharmacy_name varchar(256), report_title varchar(256), report_subject varchar(256), report_desc varchar(256), reported_date date)",
+        query : "CREATE TABLE reports (id int primary key, username varchar(256), pharmacy_name varchar(256), report_title varchar(256), report_subject varchar(256), report_desc varchar(256), reported_date date)",
     },
     {
         tableName : "users",
-        query :  "CREATE TABLE users (username varchar(256), password varchar(256), status int default 1, role int, role_desc varchar(256), last_accessed int default 1, email varchar(256), pharmacy_name varchar(256), branch_id int, mobile_number varchar(20), have_access_to varchar(256), subscription_pack varchar(256) default 'none', date_of_subscription date)",
+        query :  "CREATE TABLE users (username varchar(256) primary key, password varchar(256), status int default 1, role int, role_desc varchar(256), last_accessed int default 1, email varchar(256), pharmacy_name varchar(256), branch_id int, mobile_number varchar(20), have_access_to varchar(256), subscription_pack varchar(256) default 'none', date_of_subscription date)",
     },
     {
         tableName : "approved_items",
@@ -37,11 +37,11 @@ const createTables = [
     },
     {
         tableName : "menus",
-        query : "CREATE TABLE menus (id int, field_id varchar(256), field_name varchar(256))"
+        query : "CREATE TABLE menus (id int primary key, field_id varchar(256), field_name varchar(256))"
     },
     {
         tableName : "user_auth",
-        query : "CREATE TABLE user_auth (username varchar(256), two_fa_enabled int(1))"
+        query : "CREATE TABLE user_auth (username varchar(256) primary key, two_fa_enabled int(1))"
     }
 ];
 
