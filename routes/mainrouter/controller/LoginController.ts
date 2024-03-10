@@ -3,6 +3,7 @@ const StartupController = require("./StartupController.ts");
 const bcrypt = require("bcrypt");
 const AuthUtil = require("./../../util/AuthUtil.ts");
 const Validator = require("../../util/validators.ts");
+const UserRoleAndAccessilibity = require("../data/org-data.ts").UserRoleAndAccessilibity;
 
 const transporter = StartupController.getTransporterData();
 
@@ -168,7 +169,6 @@ async function loginUser(req: any, res: any) {
                   isTFAEnabled :  validatedUser.isTFAEnabled,
                   isTFAVerified : validatedUser.isTFAVerified,
                 };
-  
                 const secretKey = CommonUtil.generateJWTToken({ username : userSession.username, date : Date() });
                 session[secretKey] = userSession;
                 console.log(`user logged in : `, validatedUser.username);
@@ -326,21 +326,13 @@ function createNewUser(req: any, res: any) {
         [
           req.body.username,
           hashedPassword,
-          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-            ? 1
-            : 2,
-          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-            ? 1
-            : 8,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""? UserRoleAndAccessilibity.admin.roleId : UserRoleAndAccessilibity.ecommerce.roleId,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== "" ? 1 : 8,
           req.body.email,
           req.body.mobileNumber,
           req.body.pharmacyName,
-          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-            ? 1
-            : -1,
-          req.body.pharmacyName && req.body.pharmacyName.trim() !== ""
-            ? "[1][2][3][4][5][6][7][9][10]"
-            : "[8]",
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== "" ? 1 : -1,
+          req.body.pharmacyName && req.body.pharmacyName.trim() !== "" ? UserRoleAndAccessilibity.admin.access : UserRoleAndAccessilibity.ecommerce.access,
         ],
         (err1: any, result1: any, fields1: any) => {
           if (err1) {

@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const Validator = require("../../util/validators.ts");
+const UserRoleAndAccessilibity = require("../data/org-data.ts").UserRoleAndAccessilibity;
 
 function getReports(req: any, res: any) {
   let connection = req.db;
@@ -200,18 +201,19 @@ function postDeliveryManDetail(req: any, res: any) {
         var queryParam1 = [
           req.body.name,
           hashedPassword,
+          UserRoleAndAccessilibity.deliveryMan.roleId,
           req.body.mobileNumber,
           session[req.headers.authorization].username,
           req.body.email,
           session[req.headers.authorization].username,
-          "[12]",
+          UserRoleAndAccessilibity.deliveryMan.access,
           session[req.headers.authorization].pharmacy,
           1,
           session[req.headers.authorization].pharmacy,
           1,
         ];
         connection.query(
-          "insert into users set username = ?, password = ?, role = 6, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)",
+          "insert into users set username = ?, password = ?, role = ?, last_accessed = 12,  mobile_number = ?,branch_id = (select u.branch_id from users u where u.username = ?), email = ?, pharmacy_name = (select u.pharmacy_name from users u where u.username = ?), have_access_to = ?, subscription_pack = (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), date_of_subscription = (select uuuu.date_of_subscription from users uuuu where pharmacy_name = ? and role = ?)",
           queryParam1,
           (err1: any, result1: any, fields1: any) => {
             if (err1) {
@@ -319,13 +321,13 @@ function postPharmacistDetails(req: any, res: any) {
               var queryParam1 = [
                 req.body.name,
                 hashedPassword,
-                3,
+                UserRoleAndAccessilibity.pharmacist.roleId,
                 11,
                 req.body.email,
                 session[req.headers.authorization].username,
                 session[req.headers.authorization].username,
                 req.body.mobileNumber,
-                "[11]",
+                UserRoleAndAccessilibity.pharmacist.access,
                 session[req.headers.authorization].pharmacy,
                 1,
                 session[req.headers.authorization].pharmacy,
@@ -405,17 +407,19 @@ async function postManager(req: any, res: any) {
   var queryParam1 = [
     req.body.username,
     hashedPassword,
+    UserRoleAndAccessilibity.manager.roleId,
     req.body.email,
     session[req.headers.authorization].username,
     req.body.branch,
     req.body.mobileNumber,
+    UserRoleAndAccessilibity.manager.access,
     session[req.headers.authorization].pharmacy,
     1,
     session[req.headers.authorization].pharmacy,
     1,
   ];
   connection.query(
-    "insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,4,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, '[1][2][4][6][7][9]', (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))",
+    "insert into users (username, password, role, last_accessed,email,pharmacy_name, branch_id, mobile_number, have_access_to, subscription_pack, date_of_subscription) values (?,?,?,1,?,(select uuu.pharmacy_name from users uuu where uuu.username = ?),?, ?, ?, (select uuuu.subscription_pack from users uuuu where pharmacy_name = ? and role = ?), (select uuuuu.date_of_subscription from users uuuuu where pharmacy_name = ? and role = ?))",
     queryParam1,
     (err1: any, result1: any, fields1: any) => {
       if (err1) {
@@ -549,8 +553,6 @@ const validateManager = (req : any) => {
   validationMessage = Validator.validatePhoneNumber(req.body.mobileNumber);
   if(validationMessage != "") return validationMessage;
   validationMessage = Validator.validateAddress(req.body.address);
-  if(validationMessage != "") return validationMessage;
-  validationMessage = Validator.validateAadhar(req.body.aadhar);
   if(validationMessage != "") return validationMessage;
   return "";
 }
