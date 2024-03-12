@@ -14,12 +14,7 @@ function checkUserDuplicateDetails(req: any, res: any) {
       "select (select count(username) from users where username = ?) as username_count, (select count(email) from users where email = ?) as email_count, (select count(mobile_number) from users where mobile_number = ?) as mobile_number_count",
       [req.body.username, req.body.email, req.body.mobileNumber],
       (err: any, result: any, fields: any) => {
-        if (
-          !result ||
-          (+result[0].username_count === 0 &&
-            +result[0].email_count === 0 &&
-            +result[0].mobile_number_count === 0)
-        ) {
+        if (!result || (+result[0].username_count === 0 && +result[0].email_count === 0 && +result[0].mobile_number_count === 0)) {
           res.status(200).send({
             status: "success",
             message: "Details not found",
@@ -113,13 +108,8 @@ function updateLastAccessedScreen(req: any, res: any) {
       return;
     }
 
-    connection.query(
-      "update users set last_accessed = ? where username = ? and pharmacy_name = ?",
-      [
-        lastAccessedScreen,
-        session[req.headers.authorization].username,
-        session[req.headers.authorization].pharmacy,
-      ],
+    connection.query("update users set last_accessed = ? where username = ? and pharmacy_name = ?",
+      [lastAccessedScreen, session[req.headers.authorization].username, session[req.headers.authorization].pharmacy],
       (err: any, result: any, fields: any) => {
         res.send({ message: "success" });
       }
@@ -133,10 +123,7 @@ async function loginUser(req: any, res: any) {
   try {
     let connection = req.db;
     let session = req.session;
-    if (
-      CommonUtil.isUndefined(req.headers.authorization) ||
-      CommonUtil.isUndefined(session[req.headers.authorization])
-    ) {
+    if (CommonUtil.isUndefined(req.headers.authorization) || CommonUtil.isUndefined(session[req.headers.authorization])) {
       connection.query(
         "select u.username as u_username, password, have_access_to, role, last_accessed, pharmacy_name, subscription_pack, date_of_subscription, two_fa_enabled from users u left join user_auth ua on u.username = ua.username where u.username = ? and status = 1",
         [req.body.username],
@@ -264,34 +251,22 @@ function createNewUser(req: any, res: any) {
           message: "Username already exists",
         });
         return;
-      } else if (
-        !otpRecords[req.headers[newUserAuthKey]] ||
-        !otpRecords[req.headers[newUserAuthKey]].mail
-      ) {
+      } else if (!otpRecords[req.headers[newUserAuthKey]] || !otpRecords[req.headers[newUserAuthKey]].mail) {
         console.error("otp not found");
         res.status(200).send({
           status: "error",
           message: "Verify your email...",
         });
         return;
-      } else if (
-        otpRecords[req.headers[newUserAuthKey]].mail !== req.body.email
-      ) {
-        console.error("email is not the same");
+      } else if (otpRecords[req.headers[newUserAuthKey]].mail !== req.body.email) {
         delete otpRecords[req.headers[newUserAuthKey]];
         res.status(200).send({
           status: "error",
           message: "Email Mismatch...",
         });
         return;
-      } else if (
-        otpRecords[req.headers[newUserAuthKey]].minute > date.getMinutes()
-      ) {
-        if (
-          date.getMinutes() +
-            (60 - otpRecords[req.headers[newUserAuthKey]].minute) >
-            Number(process.env.MAIL_OTP_EXPIRY_MINUTE)
-        ) {
+      } else if (otpRecords[req.headers[newUserAuthKey]].minute > date.getMinutes()) {
+        if (date.getMinutes() + (60 - otpRecords[req.headers[newUserAuthKey]].minute) > Number(process.env.MAIL_OTP_EXPIRY_MINUTE)) {
           delete otpRecords[req.headers[newUserAuthKey]];
           res.status(200).send({
             status: "error",
@@ -299,13 +274,8 @@ function createNewUser(req: any, res: any) {
           });
           return;
         }
-      } else if (
-        otpRecords[req.headers[newUserAuthKey]].minute < date.getMinutes()
-      ) {
-        if (
-          date.getMinutes() - otpRecords[req.headers[newUserAuthKey]].minute >
-          Number(process.env.MAIL_OTP_EXPIRY_MINUTE)
-        ) {
+      } else if (otpRecords[req.headers[newUserAuthKey]].minute < date.getMinutes()) {
+        if (date.getMinutes() - otpRecords[req.headers[newUserAuthKey]].minute > Number(process.env.MAIL_OTP_EXPIRY_MINUTE)) {
           delete otpRecords[req.headers[newUserAuthKey]];
           res.status(200).send({
             status: "error",

@@ -1,5 +1,6 @@
 const StartupController = require("../../mainrouter/controller/StartupController.ts");
 const authUtil = require("../../util/AuthUtil.ts");
+const TfaAuthUtil = require("../utils/tfa-auth-util.ts");
 const transporter = StartupController.getTransporterData();
 
 function sendOTP(req : any, res : any) {
@@ -12,7 +13,7 @@ function sendOTP(req : any, res : any) {
         const currentDateTime = new Date();
         const lastOTPSentDateTime = new Date(result[0].last_otp_sent);
 
-        if(!authUtil.isAllowedToSentOtpForTFA(currentDateTime, lastOTPSentDateTime)) {
+        if(!TfaAuthUtil.isAllowedToSentOtpForTFA(currentDateTime, lastOTPSentDateTime)) {
           res.status(200).send({
             status: "success",
             message: "Already OTP had been sent, kindly check the inbox",
@@ -82,15 +83,8 @@ function verifyOTP(req : any, res : any) {
     let session = req.session;
 
     let date = new Date();
-    if (
-      otpRecords[req.headers.authorization].minute >
-      date.getMinutes()
-    ) {
-      if (
-        date.getMinutes() +
-          (60 - otpRecords[req.headers.authorization].minute) >
-        5
-      ) {
+    if (otpRecords[req.headers.authorization].minute > date.getMinutes()) {
+      if (date.getMinutes() + (60 - otpRecords[req.headers.authorization].minute) >  Number(process.env.MAIL_OTP_EXPIRY_MINUTE)) {
         delete otpRecords[req.headers.authorization];
         res.status(200).send({
           status: "error",
@@ -98,44 +92,29 @@ function verifyOTP(req : any, res : any) {
         });
         return;
       }
-    } else if (
-      !req.headers.authorization ||
-      !otpRecords[req.headers.authorization]
-    ) {
+    } else if (!req.headers.authorization || !otpRecords[req.headers.authorization]) {
       delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
         message: "The Provided OTP is expired",
       });
       return;
-    } else if (
-      !otpRecords[req.headers.authorization] ||
-      !otpRecords[req.headers.authorization].mail
-    ) {
+    } else if (!otpRecords[req.headers.authorization] || !otpRecords[req.headers.authorization].mail) {
       delete otpRecords[req.headers.authorization];
       res.status(200).send({
         status: "error",
         message: "Please register your mail",
       });
       return;
-    } else if (
-      otpRecords[req.headers.authorization].minute <
-      date.getMinutes()
-    ) {
-      if (
-        date.getMinutes() -
-          otpRecords[req.headers.authorization].minute >
-        5
-      ) {
+    } else if (otpRecords[req.headers.authorization].minute < date.getMinutes()) {
+      if (date.getMinutes() - otpRecords[req.headers.authorization].minute > Number(process.env.MAIL_OTP_EXPIRY_MINUTE)) {
         res.status(200).send({
           status: "error",
           message: "The Provided OTP is expired",
         });
         return;
       }
-    } else if (
-      Number(otpRecords[req.headers.authorization].otp) !== Number(req.body.otp)
-    ) {
+    } else if (Number(otpRecords[req.headers.authorization].otp) !== Number(req.body.otp)) {
       res.status(200).send({
         status: "error",
         message: "The Provided OTP is invalid",
