@@ -41,7 +41,7 @@ const createTables = [
     },
     {
         tableName : "user_auth",
-        query : "CREATE TABLE user_auth (username varchar(256) primary key, two_fa_enabled int(1))"
+        query : "CREATE TABLE user_auth (username varchar(256) primary key, two_fa_enabled int(1), multi_fa_enabled int(1), last_otp_sent datetime)"
     }
 ];
 
@@ -55,7 +55,10 @@ function intiliazeAllTables(connection : any) {
             if(tableExistError) console.log("Error checking table exists...", tableExistError)
             else if(tableExistResult.length == 0) { 
                 connection.query(table.query, (err : any, result : any, fields : any) => {
-                    if(err) console.log("Error creating database");
+                    if(err) {
+                        console.log("Error creating database");
+                        console.log(err);
+                    }
                 });
             }
 

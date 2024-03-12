@@ -6,47 +6,68 @@ function sendOTP(req : any, res : any) {
   let connection = req.db;
   let otpRecords = req.otpRecords;
   let session = req.session;
-  connection.query("select email from users where username = ?", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+  connection.query("select u.email, ua.last_otp_sent from users u left join user_auth ua on u.username = ua.username where u.username = ?", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
     if(!err && result && result.length == 1) {
-        let email = result[0].email;
-        let date = new Date();
+        const email = result[0].email;
+        const currentDateTime = new Date();
+        const lastOTPSentDateTime = new Date(result[0].last_otp_sent);
 
-        const secretKey = req.headers.authorization;
+        if(!authUtil.isAllowedToSentOtpForTFA(currentDateTime, lastOTPSentDateTime)) {
+          res.status(200).send({
+            status: "success",
+            message: "Already OTP had been sent, kindly check the inbox",
+          });
+          return;
+        }
 
-        otpRecords[secretKey] = {
-          username: req.body.username,
-          mail: result[0].email,
-          otp: Math.floor(Math.random() * 9000 + 1000).toString(),
-          hour: date.getHours(),
-          minute: date.getMinutes(),
-        };
-
-        var mailOptions = {
-          from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() + ".com>",
-          to: result[0].email,
-          subject: "Verify Your Account",
-          text:
-            process.env.BRAND_NAME +  " Account Verfication OTP (valid for 5 minutes) : " +
-            otpRecords[secretKey].otp,
-        };
-
-        transporter.sendMail(mailOptions, function (error: any, info: any) {
-          if (error) {
-            console.log(error);
+        connection.query("insert into user_auth (username, last_otp_sent) values (?, ?) on duplicate key update last_otp_sent = ?", [session[req.headers.authorization].username, currentDateTime, currentDateTime], (err1 : any, result1 : any, fields1 : any ) => {
+          if(err) {
+            console.log(err);
             res.status(200).send({
               status: "failed",
               message: "Something went wrong",
             });
-            return;
           } else {
-            console.log("Email sent - 2FA: " + result[0].email);
-            res.status(200).send({
-              status: "success",
-              message: "OTP has been delivered to the mail",
+            const secretKey = req.headers.authorization;
+
+            otpRecords[secretKey] = {
+              username: req.body.username,
+              mail: result[0].email,
+              otp: Math.floor(Math.random() * 9000 + 1000).toString(),
+              hour: currentDateTime.getHours(),
+              minute: currentDateTime.getMinutes(),
+            };
+
+            var mailOptions = {
+              from: process.env.BRAND_NAME + " <security-alert@" + process.env.BRAND_NAME?.toLowerCase() + ".com>",
+              to: result[0].email,
+              subject: "Verify Your Account",
+              text:
+                process.env.BRAND_NAME +  " Account Verfication OTP (valid for " + Number(process.env.MAIL_OTP_EXPIRY_MINUTE) + " minutes) : " +
+                otpRecords[secretKey].otp,
+            };
+
+            transporter.sendMail(mailOptions, function (error: any, info: any) {
+              if (error) {
+                console.log(error);
+                res.status(200).send({
+                  status: "failed",
+                  message: "Something went wrong",
+                });
+                return;
+              } else {
+                console.log("Email sent - 2FA: " + result[0].email);
+                res.status(200).send({
+                  status: "success",
+                  message: "OTP has been delivered to the mail",
+                });
+              }
             });
           }
         });
     } else {
+      console.log(result.length);
+      console.log(err);
         res.send({
             status : "failed",
             message : "Something went wrong"
@@ -121,11 +142,13 @@ function verifyOTP(req : any, res : any) {
       });
       return;
     }
-    delete otpRecords[req.headers.authorization];
-    session[req.headers.authorization].isTFAVerified = true;
-    res.send({
-        status : "success",
-        message : "OTP has been Verified"
+    connection.query("update user_auth set last_otp_sent = ? where username = ?", [null, session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+      delete otpRecords[req.headers.authorization];
+      session[req.headers.authorization].isTFAVerified = true;
+      res.send({
+          status : "success",
+          message : "OTP has been Verified"
+      });
     });
 }
 
@@ -237,7 +260,7 @@ function configureTFA(req : any, res : any) {
       return;
     }
     if(req.url == "/enable") {
-      connection.query("insert into user_auth (username, two_fa_enabled) values (?, 1) on duplicate key update two_fa_enabled = 1", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+      connection.query("update user_auth set two_fa_enabled = ?, last_otp_sent = ? where username = ?", [1, null, session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
         if(err) {
           console.log(err);
           res.status(200).send({
@@ -253,7 +276,7 @@ function configureTFA(req : any, res : any) {
         }
       })
     } else if(req.url == "/disable") {
-      connection.query("update user_auth set two_fa_enabled = 0 where username = ?", [session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
+      connection.query("update user_auth set two_fa_enabled = ? where username = ?", [0, session[req.headers.authorization].username], (err : any, result : any, fields : any) => {
         if(err) {
           console.log(err);
           res.status(200).send({

@@ -41,7 +41,7 @@ function verifyEmail(req: any, res: any) {
           to: req.body.email,
           subject: "Verify Your Email",
           text:
-            process.env.BRAND_NAME + " Email Verfication OTP (valid for 5 minutes) : " +
+            process.env.BRAND_NAME + " Email Verfication OTP (valid for " + Number(process.env.MAIL_OTP_EXPIRY_MINUTE) + " minutes) : " +
             otpRecords[secretKey].otp,
         };
 
@@ -106,7 +106,7 @@ function generateEmail(req: any, res: any) {
           to: result[0].email,
           subject: "Verify Your Account",
           text:
-            process.env.BRAND_NAME + " Account Verfication OTP (valid for 5 minutes) : " +
+            process.env.BRAND_NAME + " Account Verfication OTP (valid for " + Number(process.env.MAIL_OTP_EXPIRY_MINUTE) + " minutes) : " +
             otpRecords[secretKey].otp,
         };
 

@@ -290,7 +290,7 @@ function createNewUser(req: any, res: any) {
         if (
           date.getMinutes() +
             (60 - otpRecords[req.headers[newUserAuthKey]].minute) >
-          5
+            Number(process.env.MAIL_OTP_EXPIRY_MINUTE)
         ) {
           delete otpRecords[req.headers[newUserAuthKey]];
           res.status(200).send({
@@ -304,7 +304,7 @@ function createNewUser(req: any, res: any) {
       ) {
         if (
           date.getMinutes() - otpRecords[req.headers[newUserAuthKey]].minute >
-          5
+          Number(process.env.MAIL_OTP_EXPIRY_MINUTE)
         ) {
           delete otpRecords[req.headers[newUserAuthKey]];
           res.status(200).send({
