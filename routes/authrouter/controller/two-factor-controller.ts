@@ -178,15 +178,8 @@ function configureTFA(req : any, res : any) {
     let session = req.session;
 
     let date = new Date();
-    if (
-      otpRecords[req.headers.authorization].minute >
-      date.getMinutes()
-    ) {
-      if (
-        date.getMinutes() +
-          (60 - otpRecords[req.headers.authorization].minute) >
-        5
-      ) {
+    if (otpRecords[req.headers.authorization].minute > date.getMinutes()) {
+      if (date.getMinutes() + (60 - otpRecords[req.headers.authorization].minute) > 5) {
         delete otpRecords[req.headers.authorization];
         res.status(200).send({
           status: "error",

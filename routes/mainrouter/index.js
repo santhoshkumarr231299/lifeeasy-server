@@ -22,6 +22,7 @@ const AuthData = require("./data/auth-data.ts");
 const AuthFilter = require("./filters/auth-filter.ts");
 const FileUploadData = require("./data/file-upload-data.ts");
 const twoFA = require("../authrouter/two-factor-auth.ts");
+const AuthController = require("./controller/AuthController.ts");
 require("dotenv").config();
 
 app.use(StartupController.useCors());
@@ -85,6 +86,9 @@ app.use(AuthFilter.checkAuth);
 app.get("/", function (req, res) {
   res.send("You are not authorized...");
 });
+
+//Auth Controller
+app.get("/menus", AuthController.getMenus);
 
 //Login Controller
 app.post("/update-last-accessed", LoginController.updateLastAccessedScreen); // [all authenticated]

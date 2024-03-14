@@ -45,6 +45,11 @@ const allMenus = [
         fieldName: "Reports",
       },
       {
+        id: 10,
+        fieldId: "[10]",
+        fieldName: "Manage User Previliges",
+      },
+      {
         id: 11,
         fieldId: "[11]",
         fieldName: "Orders Approval",

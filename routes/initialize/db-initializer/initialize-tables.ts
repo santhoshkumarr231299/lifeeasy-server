@@ -56,7 +56,7 @@ function intiliazeAllTables(connection : any) {
             else if(tableExistResult.length == 0) { 
                 connection.query(table.query, (err : any, result : any, fields : any) => {
                     if(err) {
-                        console.log("Error creating database");
+                        console.log("Error creating table...");
                         console.log(err);
                     }
                 });
