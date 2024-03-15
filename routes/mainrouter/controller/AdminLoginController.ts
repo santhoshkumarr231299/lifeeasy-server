@@ -65,9 +65,18 @@ function getUserPrevileges(req: any, res: any) {
         let userPrevileges : string = result[0].have_access_to;
         let userPrevArr : string[]  = userPrevileges.replaceAll("[", "").replaceAll("]", " ").split(" ").filter((item : string) => item != "");
         let userPrevArrNum : number[] = [];
-        userPrevArr.forEach(item => {
-          userPrevArrNum.push(Number(item));
-        });
+        try {
+          userPrevArr.forEach(item => {
+            userPrevArrNum.push(Number(item));
+          });
+        } catch(e) {
+          console.log(e);
+          res.status(200).send({
+            status : "error",
+            message : "Something went wrong"
+          })
+          return;
+        }
         res.status(200).send({
           status: "success",
           message: "User Previlges",

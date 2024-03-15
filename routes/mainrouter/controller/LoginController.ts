@@ -78,7 +78,6 @@ function isUserLoggedIn(req: any, res: any) {
               username: session[req.headers.authorization].username,
               role: session[req.headers.authorization].role,
               lastAccessedScreen: result[0].last_accessed,
-              haveAccessTo: result[0].have_access_to,
               pharmacy: session[req.headers.authorization].pharmacy,
               subscriptionPack: result[0].subscription_pack,
               DateOfSubscription: result[0].date_of_subscription,
