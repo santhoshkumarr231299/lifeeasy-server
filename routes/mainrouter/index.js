@@ -2,6 +2,7 @@ var express = require("express");
 var app = express();
 const superApi = require("../superadmin/superapi");
 const chatBot = require("../chatbot/chatbot");
+const integrationApis = require("../integrationrouter/integration-router.ts");
 const schdule = require("node-schedule");
 const StartupController = require("./controller/StartupController.ts");
 const LoginController = require("./controller/LoginController.ts");
@@ -51,6 +52,16 @@ app.use(
   superApi
 );
 
+app.use("/integration", 
+  (req, res, next) => {
+    req.session = AuthData.getSessionData();
+    req.db = StartupController.getConnection();
+    req.otpRecords = AuthData.getOtpRecords();
+    next();
+  },
+  integrationApis
+);
+
 app.use(
   "/2fa",
   (req, res, next) => {
@@ -88,12 +99,12 @@ app.get("/", function (req, res) {
 });
 
 //Auth Controller
-app.get("/menus", AuthController.getMenus);
+app.get("/menus", AuthController.getMenus); // [all authenticated]
+app.post("/logged-in", AuthController.isUserLoggedIn); // [open]
 
 //Login Controller
 app.post("/update-last-accessed", LoginController.updateLastAccessedScreen); // [all authenticated]
 app.post("/check-username", LoginController.checkUserDuplicateDetails); // [open]
-app.post("/logged-in", LoginController.isUserLoggedIn); // [open]
 app.post("/login", LoginController.loginUser); // [open]
 app.post("/new-user", LoginController.createNewUser); // [open]
 

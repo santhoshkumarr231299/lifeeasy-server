@@ -56,46 +56,6 @@ function checkUserDuplicateDetails(req: any, res: any) {
   }
 }
 
-function isUserLoggedIn(req: any, res: any) {
-  try {
-    let connection = req.db;
-    let session = req.session;
-    if (
-      CommonUtil.isUndefined(req.headers.authorization) ||
-      CommonUtil.isUndefined(session[req.headers.authorization])
-    ) {
-      res.status(200).send({});
-    } else {
-      connection.query(
-        "select * from users where username = ?  and status = 1",
-        [
-          session[req.headers.authorization].username,
-          session[req.headers.authorization].pharmacy,
-        ],
-        (err: any, result: any, fields: any) => {
-          if (result && result.length === 1) {
-            res.status(200).send({
-              username: session[req.headers.authorization].username,
-              role: session[req.headers.authorization].role,
-              lastAccessedScreen: result[0].last_accessed,
-              pharmacy: session[req.headers.authorization].pharmacy,
-              subscriptionPack: result[0].subscription_pack,
-              DateOfSubscription: result[0].date_of_subscription,
-              isTFAEnabled :  session[req.headers.authorization].isTFAEnabled,
-              isTFAVerified : session[req.headers.authorization].isTFAVerified,
-            });
-          } else {
-            res.status(200).send({});
-          }
-        }
-      );
-    }
-  } catch (e) {
-    console.log(e);
-    res.status(200).send({});
-  }
-}
-
 function updateLastAccessedScreen(req: any, res: any) {
   try {
     let lastAccessedScreen : number = req.body.lastAccessedScreen;
@@ -233,8 +193,8 @@ function createNewUser(req: any, res: any) {
   let newUserAuthKey: string = process.env.NEW_USER_AUTH_KEY || "";
 
   connection.query(
-    "select * from users where username = ?",
-    [req.body.username],
+    "select * from users where username = ? or email = ? or mobile_number = ?",
+    [req.body.username, req.body.email, req.body.mobileNumber],
     async (err: any, result: any, fields: any) => {
       let date = new Date();
       if (err) {
@@ -247,7 +207,7 @@ function createNewUser(req: any, res: any) {
       } else if (result.length > 0) {
         res.status(200).send({
           status: "danger",
-          message: "Username already exists",
+          message: "User already exists",
         });
         return;
       } else if (!otpRecords[req.headers[newUserAuthKey]] || !otpRecords[req.headers[newUserAuthKey]].mail) {
@@ -385,7 +345,6 @@ const validateNewUser = (req : any) => {
 
 module.exports = {
   checkUserDuplicateDetails,
-  isUserLoggedIn,
   updateLastAccessedScreen,
   loginUser,
   createNewUser,

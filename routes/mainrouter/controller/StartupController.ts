@@ -31,7 +31,7 @@ export function getTransporterData() {
 
 export function useCors() {
   return cors({
-    origin: process.env.CLIENT_BASE_URL,
+    origin: [process.env.CLIENT_BASE_URL, process.env.CHAT_BASE_URL],
     methods: ["GET", "POST"],
     credentials: false,
     exposedHeaders: [
