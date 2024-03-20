@@ -115,5 +115,6 @@ function getAllowedUrls() {
 module.exports = {
   authorizeEndpoint,
   isScreenCodeSupported,
-  getAllowedUrls
+  getAllowedUrls,
+  apiScreens
 };

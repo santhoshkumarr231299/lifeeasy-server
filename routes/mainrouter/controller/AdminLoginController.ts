@@ -145,8 +145,6 @@ function updateUserPrevileges(req: any, res: any) {
   }
 }
 
-function postNewManager(req: any, res: any) {}
-
 module.exports = {
   getUsers,
   getUserPrevileges,

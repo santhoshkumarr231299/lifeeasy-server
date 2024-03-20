@@ -48,7 +48,7 @@ const createTables = [
 
 function intiliazeAllTables(connection : any) {
     console.log("Table Intialization started...");
-    let isTableExistQuery = "SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
+    const isTableExistQuery = "SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
 
     createTables.forEach((table : any) => {
         connection.query(isTableExistQuery, [process.env.DB_LOCAL_DBNAME, table.tableName], (tableExistError : any, tableExistResult : any, tableExistFields : any) => {

@@ -21,7 +21,7 @@ const PharmacistController = require("./controller/PharmacistController.ts");
 const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
 const AuthData = require("./data/auth-data.ts");
 const AuthFilter = require("./filters/auth-filter.ts");
-const FileUploadData = require("./data/file-upload-data.ts");
+const FileUploadData = require("./data/medcine-img-upload-data.ts");
 const twoFA = require("../authrouter/two-factor-auth.ts");
 const AuthController = require("./controller/AuthController.ts");
 require("dotenv").config();

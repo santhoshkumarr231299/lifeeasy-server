@@ -1,5 +1,5 @@
 const Validator = require("../../util/validators.ts");
-const FileUpload = require("../data/file-upload-data.ts");
+const FileUpload = require("../data/medcine-img-upload-data.ts");
 
 function getMedicines(req: any, res: any) {
   let connection = req.db;
@@ -47,7 +47,7 @@ function postMedicines(req: any, res: any) {
   let session = req.session;
   var sizeOfMed = 1;
   connection.query(
-    "select max(mid) as total from medicines",
+    "select count(mid) as total from medicines",
     [session[req.headers.authorization].username],
     (err1: any, result1: any, fields1: any) => {
       if (err1) {

@@ -41,10 +41,7 @@ function isUserLoggedIn(req: any, res: any) {
       } else {
         connection.query(
           "select * from users where username = ?  and status = 1",
-          [
-            session[req.headers.authorization].username,
-            session[req.headers.authorization].pharmacy,
-          ],
+          [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy],
           (err: any, result: any, fields: any) => {
             if (result && result.length === 1) {
               res.status(200).send({
