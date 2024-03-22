@@ -12,7 +12,7 @@ const allMenus = [
       {
         id: 3,
         fieldId: "[3]",
-        fieldName: "Customer",
+        fieldName: "Manager",
       },
       {
         id: 4,

@@ -166,9 +166,8 @@ function addToCart(req: any, res: any) {
         });
         return;
       }
-      let insertCartQuery = "insert into cartitems (mid, medname, price, pharm_name,username,quantity) select mid, mname, med_rate, ?, ?, ? from medicines where mid = ?";
+      let insertCartQuery = "insert into cartitems (mid, medname, price, pharm_name,username,quantity) select m.mid, m.mname, m.med_rate, u.pharmacy_name, ?, ? from medicines m left join users u on m.username = u.username where m.mid = ?";
       let insertCartParams = [
-        session[req.headers.authorization].pharmacy,
         session[req.headers.authorization].username,
         req.body.quantity,
         req.body.mid,

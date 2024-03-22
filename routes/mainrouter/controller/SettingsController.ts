@@ -1,4 +1,5 @@
 const Validator = require("../../util/validators.ts");
+const FileUpload = require("../data/profile-img-upload-data");
 
 function getUserDetails(req: any, res: any) {
   let connection = req.db;
@@ -88,7 +89,43 @@ const validateUserDetails = (req : any) : string => {
   return "";
 }
 
+function getProfileImage(req : any, res : any) {
+  const session = req.session;
+  const username = session[req.headers.authorization].username;
+  res.sendFile(username + ".jpg", { root: 'storage/profile-images' });
+}
+
+function uploadProfileImage(req : any, res : any) {
+  try {
+    if(!req.file) {
+      res.send({
+        status : "error",
+        message : "No images were selected"
+      })
+      return;
+    } else if (FileUpload.getFileExtensionNameForProfileImage(req.file.originalname).toLowerCase() != ".jpg") {
+      res.send({
+        status : "error",
+        message : "Image Extension should be jpg"
+      })
+      return;
+    }
+    res.send({
+      status : "success",
+      message : "Profile Image uploaded successfully"
+    })
+  } catch(e) {
+    console.log(e);
+    res.send({
+      status : "error",
+      message : "Something went wrong"
+    })
+  }
+}
+
 module.exports = {
   getUserDetails,
   updateUserDetails,
+  getProfileImage,
+  uploadProfileImage
 };

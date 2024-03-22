@@ -21,7 +21,8 @@ const PharmacistController = require("./controller/PharmacistController.ts");
 const StartupEntries = require("./../initialize/db-initializer/startup-entries.ts");
 const AuthData = require("./data/auth-data.ts");
 const AuthFilter = require("./filters/auth-filter.ts");
-const FileUploadData = require("./data/medcine-img-upload-data.ts");
+const MedicineUploadData = require("./data/medcine-img-upload-data.ts").medicineUpload;
+const ProfileImageUploadData = require("./data/profile-img-upload-data.ts").profileImageUpload;
 const twoFA = require("../authrouter/two-factor-auth.ts");
 const AuthController = require("./controller/AuthController.ts");
 require("dotenv").config();
@@ -111,13 +112,15 @@ app.post("/new-user", LoginController.createNewUser); // [open]
 //Medicine Controller
 app.post("/get-medicines", MedicineController.getMedicines); // [4]
 app.post("/post-medicine", MedicineController.postMedicines); // [4]
-app.post("/medicine/upload", FileUploadData.medicineUpload.single('file'), MedicineController.uploadMedicineImage); // [4]
+app.post("/medicine/upload", MedicineUploadData.single('file'), MedicineController.uploadMedicineImage); // [4]
 app.post("/get-search-medicines", MedicineController.getSearchMedicines); // [13]
 app.get("/medicine-image", MedicineController.serveMedicineImage);// [open]
 
 //Settings Controller
 app.post("/get-user-details", SettingsController.getUserDetails); // [all authenticated]
 app.post("/update-user-details", SettingsController.updateUserDetails); // [all authenticated]
+app.get("/get-profile-image", SettingsController.getProfileImage); // [all authenticated]
+app.post("/profile-image-upload", ProfileImageUploadData.single('file'), SettingsController.uploadProfileImage); // [all authenticated]
 
 //Ecommerce Cart Controller
 app.post("/get-cart-items", EcomCartController.getCartItems); // [8]
