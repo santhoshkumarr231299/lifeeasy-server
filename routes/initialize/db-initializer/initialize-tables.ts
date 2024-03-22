@@ -42,6 +42,10 @@ const createTables = [
     {
         tableName : "user_auth",
         query : "CREATE TABLE user_auth (username varchar(256) primary key, two_fa_enabled int(1), multi_fa_enabled int(1), last_otp_sent datetime)"
+    },
+    {
+        tableName : "user_props",
+        query : "CREATE TABLE user_props (username varchar(256) primary key, theme_background varchar(256), theme_font_color varchar(256), theme_others varchar(256))"
     }
 ];
 

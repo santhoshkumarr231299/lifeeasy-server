@@ -40,7 +40,7 @@ function isUserLoggedIn(req: any, res: any) {
         res.status(200).send({});
       } else {
         connection.query(
-          "select * from users where username = ?  and status = 1",
+          "select u.username, u.role, u.last_accessed, u.subscription_pack, u.date_of_subscription, up.theme_background, up.theme_font_color, up.theme_others from users u left join user_props up on u.username = up.username where u.username = ?  and u.status = 1",
           [session[req.headers.authorization].username, session[req.headers.authorization].pharmacy],
           (err: any, result: any, fields: any) => {
             if (result && result.length === 1) {
@@ -53,6 +53,11 @@ function isUserLoggedIn(req: any, res: any) {
                 DateOfSubscription: result[0].date_of_subscription,
                 isTFAEnabled :  session[req.headers.authorization].isTFAEnabled,
                 isTFAVerified : session[req.headers.authorization].isTFAVerified,
+                theme : {
+                  background : result[0].theme_background ? result[0].theme_background : "default",
+                  fontColor : result[0].theme_font_color ? result[0].theme_font_color  : "default",
+                  others : result[0].theme_others ? result[0].theme_others : "default"
+                }
               });
             } else {
               res.status(200).send({});
