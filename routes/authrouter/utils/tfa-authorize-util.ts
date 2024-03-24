@@ -3,17 +3,22 @@ const LicenseDetails = require("../../mainrouter/controller/LicenseController.ts
 async function authorizeEndpoint(req : any) {
     return new Promise(async (resolve : any, reject : any) => {
       try {
-        const licenseDetails = await LicenseDetails.getLicenseDetails(req);
-        const dateOfSubscription = licenseDetails.dateOfSubscription;
-        const subscriptionPack = licenseDetails.subscriptionPack;
-        let today : any = new Date();
-        let DateOfSubscription : any = new Date(dateOfSubscription);
-        if(subscriptionPack == "monthly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 30) {
-            resolve(true);
-        } else if (subscriptionPack == "yearly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 365) {
-            resolve(true);
+        const session = req.session;
+        if(session[req.headers.authorization].pharmacy != "") {
+          const licenseDetails = await LicenseDetails.getLicenseDetails(req);
+          const dateOfSubscription = licenseDetails.dateOfSubscription;
+          const subscriptionPack = licenseDetails.subscriptionPack;
+          let today : any = new Date();
+          let DateOfSubscription : any = new Date(dateOfSubscription);
+          if(subscriptionPack == "monthly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 30) {
+              resolve(true);
+          } else if (subscriptionPack == "yearly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 365) {
+              resolve(true);
+          } else {
+              resolve(false);
+          }
         } else {
-            resolve(false);
+          resolve(true);
         }
       } catch(e) {
         console.log(e);

@@ -2,7 +2,6 @@ function getUserAuth(req : any, res : any) {
     try {
         let session = req.session;
         let connection = req.db;
-        console.log(req.headers.authorization);
         const username = session[req.headers.authorization]?.username;
         connection.query("select username from users where username = ? and status = ?", [username, 1], (err : any, result : any, fields : any) => {
             if(err) {
