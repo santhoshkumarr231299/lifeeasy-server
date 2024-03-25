@@ -123,9 +123,77 @@ function uploadProfileImage(req : any, res : any) {
   }
 }
 
+function getThemes(req : any, res : any) {
+  try {
+    const connection = req.db;
+    connection.query("select id, name, background, font_color, others from app_themes", (err : any, result : any, fields : any) => {
+      if(err) {
+        console.log(err);
+        res.send({
+          status : "error",
+          data : []
+        });
+      }
+      let dataList : any = [];
+      result.forEach((data : any) => {
+        dataList.push({
+          id : data.id,
+          name : data.name,
+          background : data.background,
+          fontColor : data.font_color,
+          others : data.others
+        });
+      });
+      res.send({
+        status : "success",
+        data : dataList
+      });
+    });
+  } catch(e) {
+    console.log(e);
+    res.send({
+      status : "error",
+      data : []
+    });
+  }
+}
+
+function setTheme(req : any, res : any) {
+  try {
+    const connection = req.db;
+    const username = req.session[req.headers.authorization].username;
+    const id : number = req.body.id;
+    const query = "INSERT INTO user_props (username, theme_background, theme_font_color, theme_others) SELECT ? AS username, " + 
+                  "background AS theme_background, font_color AS theme_font_color, others AS theme_others FROM app_themes at WHERE at.id = ? " + 
+                  "ON DUPLICATE KEY UPDATE theme_background = at.background, theme_font_color = at.font_color, theme_others = at.others";
+    connection.query(query, [username, id, username], (err : any, result : any, fields : any) => {
+      if(err) {
+        console.log(err);
+        res.send({
+          status : "error",
+          message : "Something went wrong"
+        });
+      } else {
+        res.send({
+          status : "success",
+          message : "Theme updated successfully"
+        });
+      }
+    })
+  } catch(e) {
+    console.log(e);
+    res.send({
+      status : "error",
+      message : "Something went wrong"
+    });
+  }
+}
+
 module.exports = {
   getUserDetails,
   updateUserDetails,
   getProfileImage,
-  uploadProfileImage
+  uploadProfileImage,
+  getThemes,
+  setTheme
 };

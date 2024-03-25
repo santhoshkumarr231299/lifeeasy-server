@@ -121,6 +121,8 @@ app.post("/get-user-details", SettingsController.getUserDetails); // [all authen
 app.post("/update-user-details", SettingsController.updateUserDetails); // [all authenticated]
 app.get("/get-profile-image", SettingsController.getProfileImage); // [all authenticated]
 app.post("/profile-image-upload", ProfileImageUploadData.single('file'), SettingsController.uploadProfileImage); // [all authenticated]
+app.get("/get-themes", SettingsController.getThemes); // [all authenticated]
+app.post("/set-theme", SettingsController.setTheme); // [all authenticated]
 
 //Ecommerce Cart Controller
 app.post("/get-cart-items", EcomCartController.getCartItems); // [8]

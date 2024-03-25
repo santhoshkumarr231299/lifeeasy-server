@@ -46,6 +46,10 @@ const createTables = [
     {
         tableName : "user_props",
         query : "CREATE TABLE user_props (username varchar(256) primary key, theme_background varchar(256), theme_font_color varchar(256), theme_others varchar(256))"
+    },
+    {
+        tableName : "app_themes",
+        query : "CREATE TABLE app_themes (id int primary key, name varchar(256), background varchar(256), font_color varchar(256), others varchar(256))"
     }
 ];
 
