@@ -69,7 +69,6 @@ function intiliazeAllTables(connection : any) {
                     }
                 });
             }
-
         })
     })
 }

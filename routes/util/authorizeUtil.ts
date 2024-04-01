@@ -34,12 +34,11 @@ const apiScreenCodes : any[] = [
   { [apiScreens.AssignPreviliges] : ["/get-users", "/get-user-previleges", "/update-user-previleges"], prefix : "" },
   { [apiScreens.PharmacistApproval] : ["/approve-order", "/decline-orders", "/get-ordered-items-for-approval"], prefix : "" },
   { [apiScreens.OrderPickup] : ["/get-approved-items", "/pickup-order", "/get-delivery-orders"], prefix : "" },
-  { [apiScreens.SearchMedicines] : [], prefix : "" },
+  { [apiScreens.SearchMedicines] : ["/drug-info"], prefix : "" },
   { [apiScreens.OrgChat] : [], prefix : "" }
 ];
 
 let apiScreenCodesMap : Map<string, string> = new Map();
-
 
 console.log("Updating authorization Enpoints...");
 apiScreenCodes.forEach((obj : any) => {
@@ -60,7 +59,7 @@ async function authorizeEndpoint(req : any) {
         const dateOfSubscription = licenseDetails.dateOfSubscription;
         const subscriptionPack = licenseDetails.subscriptionPack;
         if(apiScreenCodesMap.has(pathName) && haveAccessTo.includes(apiScreenCodesMap.get(pathName))) {
-          if(apiScreenCodesMap.get(pathName) != apiScreens.Ecommerce && apiScreenCodesMap.get(pathName) != apiScreens.AllAuthenticated) {
+          if(!(getLicenseExpiryCheckExclusionsList().filter(screen => apiScreenCodesMap.get(pathName) == screen).length > 0)) {
             let today : any = new Date();
             let DateOfSubscription : any = new Date(dateOfSubscription);
             if(subscriptionPack == "monthly" && (today - DateOfSubscription) / (1000 * 60 * 60 * 24) <= 30) {
@@ -111,6 +110,14 @@ function getAllowedUrls() {
     "/medicine-image",
     "/logout"
   ];
+}
+
+function getLicenseExpiryCheckExclusionsList() : string[] {
+  return [
+    apiScreens.Ecommerce,
+    apiScreens.AllAuthenticated,
+    apiScreens.SearchMedicines
+  ]
 }
   
 module.exports = {

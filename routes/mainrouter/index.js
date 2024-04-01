@@ -124,6 +124,9 @@ app.post("/profile-image-upload", ProfileImageUploadData.single('file'), Setting
 app.get("/get-themes", SettingsController.getThemes); // [all authenticated]
 app.post("/set-theme", SettingsController.setTheme); // [all authenticated]
 
+//Ecommerce Login Controller
+app.get("/drug-info", EcomLoginController.getDrugInfo); // [13]
+
 //Ecommerce Cart Controller
 app.post("/get-cart-items", EcomCartController.getCartItems); // [8]
 app.post("/get-cart-items-count", EcomCartController.getCartItemsCount); // [8]
