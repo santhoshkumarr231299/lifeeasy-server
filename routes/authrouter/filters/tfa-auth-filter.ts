@@ -21,22 +21,24 @@ async function checkAuth(req : any, res : any, next : any) {
         req.session = AuthData.getSessionData();
         req.db = StartupController.getConnection();
         req.otpRecords = AuthData.getOtpRecords();
-        if(!(await AuthorizationUtil.authorizeEndpoint(req))) {
-          res.status(403).send({
-              status: "failed",
-              message: "Unauthorized Content",
-          });
+        if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
+          next();
+          return;
+        } else if(await AuthorizationUtil.authorizeEndpoint(req)) {
+          next();
           return;
         }
-        // if(req.session[req.headers.authorization].isTFAEnabled && !req.session[req.headers.authorization].isTFAVerified) {
-          next();
-        // } else {
+        // else {
         //   res.status(403).send({
         //     status: "failed",
         //     message: "Unauthorized Content",
         //   });
         //   return;
         // }
+        res.status(403).send({
+          status: "failed",
+          message: "Unauthorized Content",
+      });
     } else {
         res.status(403).send({
         status: "failed",
