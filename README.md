@@ -7,7 +7,7 @@ deployed website - client(React JS) : https://app.netlify.com/ \
 
 Database mysql \
 
- docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=<root-user-password> -d -p 3306:3306 mysql:latest \\
+ docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=your-password -d -p 3306:3306 mysql:latest \\
 
 
 # ENVIRONMENT VARIABLES
