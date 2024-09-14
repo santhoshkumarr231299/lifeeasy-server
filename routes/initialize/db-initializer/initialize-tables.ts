@@ -77,11 +77,11 @@ const checkTableExists = (connection : any, isTableExistQuery: string, table: an
                         console.log(err);
                         reject();
                     } else {
+                        console.log("creating table : ", table.tableName);
                         resolve(0);
                     }
                 });
             } else {
-                console.log("creating table : ", table.tableName);
                 resolve(0);
             }
         });
