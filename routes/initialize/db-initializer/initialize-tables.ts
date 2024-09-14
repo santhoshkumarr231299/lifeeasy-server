@@ -54,23 +54,38 @@ const createTables = [
 ];
 
 
-function intiliazeAllTables(connection : any) {
-    console.log("Table Intialization started...");
-    const isTableExistQuery = "SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
+async function intiliazeAllTables(connection : any) {
+        console.log("Table Intialization started...");
+        const isTableExistQuery = "SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1";
 
-    createTables.forEach((table : any) => {
+        const promises = createTables.map( async (table : any) => {
+            await checkTableExists(connection, isTableExistQuery, table);
+        })
+        await Promise.all(promises);
+}
+
+const checkTableExists = (connection : any, isTableExistQuery: string, table: any) => {
+    return new Promise((resolve, reject) => {
         connection.query(isTableExistQuery, [process.env.DB_LOCAL_DBNAME, table.tableName], (tableExistError : any, tableExistResult : any, tableExistFields : any) => {
-            if(tableExistError) console.log("Error checking table exists...", tableExistError)
-            else if(tableExistResult.length == 0) { 
+            if(tableExistError) {
+                console.log("Error checking table exists...", tableExistError)
+                reject();
+            } else if(tableExistResult.length == 0) {
                 connection.query(table.query, (err : any, result : any, fields : any) => {
                     if(err) {
                         console.log("Error creating table...");
                         console.log(err);
+                        reject();
+                    } else {
+                        resolve(0);
                     }
                 });
+            } else {
+                console.log("creating table : ", table.tableName);
+                resolve(0);
             }
-        })
-    })
+        });
+    });
 }
 
 module.exports = {

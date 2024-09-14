@@ -1,0 +1,4 @@
+fileignoreconfig:
+- filename: routes/mainrouter/controller/StartupController.ts
+  checksum: a88c6aca72a130c1b6fc1cc0da2ce7607abb7f9573839bb19b15e52959e156bd
+version: "1.0"

@@ -6,7 +6,7 @@ require("dotenv").config();
 
 export function getConnection() {
   if (process.env.PRODUCTION === "false") {
-    return mysql.createPool({
+    return mysql2.createPool({
       connectionLimit: process.env.DB_LOCAL_CON_LIMMIT,
       port: process.env.DB_LOCAL_PORT,
       host: process.env.DB_LOCAL_HOST,
@@ -17,6 +17,16 @@ export function getConnection() {
   } else {
     return mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
   }
+}
+
+export function getConnectionForDbCreation() {
+  return mysql2.createPool({
+    connectionLimit: process.env.DB_LOCAL_CON_LIMMIT,
+    port: process.env.DB_LOCAL_PORT,
+    host: process.env.DB_LOCAL_HOST,
+    user: process.env.DB_LOCAL_USER,
+    password: process.env.DB_LOCAL_PASSWORD,
+  });
 }
 
 export function getTransporterData() {
@@ -44,6 +54,7 @@ export function useCors() {
 
 module.exports = {
   getConnection,
+  getConnectionForDbCreation,
   getTransporterData,
   useCors,
 };
