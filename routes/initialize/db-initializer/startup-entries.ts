@@ -20,6 +20,7 @@ const createDbIfNotExists = async () => {
         StartupController.getConnectionForDbCreation().query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_LOCAL_DBNAME}\``, (err : any) => {
             if(err) {
                 console.log("Error checking database...");
+                console.log(err);
                 reject();
             } else {
                 resolve(0);
