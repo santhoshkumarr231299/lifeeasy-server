@@ -1,5 +1,6 @@
 const TableInitializer = require("./initialize-tables.ts");
 const MenuInitializer = require("./all-menus.ts");
+const ThemeInitializer = require("./all-themes.ts");
 const StartupController = require("../../mainrouter/controller/StartupController.ts");
 
 async function initializeStartupEntries(connection : any) {
@@ -8,6 +9,7 @@ async function initializeStartupEntries(connection : any) {
         console.log("Initiating Startup Entries...");
         await createDbIfNotExists();
         await TableInitializer.intiliazeAllTables(connection);
+        ThemeInitializer.makeAllThemesEntry(connection);
         MenuInitializer.makeAllMenusEntry(connection);
     }
 }

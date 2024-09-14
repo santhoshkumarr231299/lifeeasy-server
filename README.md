@@ -5,6 +5,10 @@ website - online : https://lifeeasyoff.netlify.app/login \
 deployed website - server(Node JS)  : https://dashboard.render.com/ \
 deployed website - client(React JS) : https://app.netlify.com/ \
 
+Database mysql \
+
+ docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=<root-user-password> -d -p 3306:3306 mysql:latest \\
+
 
 # ENVIRONMENT VARIABLES
 
