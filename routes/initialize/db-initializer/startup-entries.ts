@@ -4,13 +4,14 @@ const ThemeInitializer = require("./all-themes.ts");
 const StartupController = require("../../mainrouter/controller/StartupController.ts");
 
 async function initializeStartupEntries(connection : any) {
-    //temporary to avoid exception in production environment
-    if(process.env.PRODUCTION == "false") {
+    try {
         console.log("Initiating Startup Entries...");
         await createDbIfNotExists();
         await TableInitializer.intiliazeAllTables(connection);
         ThemeInitializer.makeAllThemesEntry(connection);
         MenuInitializer.makeAllMenusEntry(connection);
+    } catch(err) {
+        throw err;
     }
 }
 

@@ -5,7 +5,6 @@ const cors = require("cors");
 require("dotenv").config();
 
 export function getConnection() {
-  if (process.env.PRODUCTION === "false") {
     return mysql2.createPool({
       connectionLimit: process.env.DB_LOCAL_CON_LIMMIT,
       port: process.env.DB_LOCAL_PORT,
@@ -14,9 +13,6 @@ export function getConnection() {
       password: process.env.DB_LOCAL_PASSWORD,
       database: process.env.DB_LOCAL_DBNAME,
     });
-  } else {
-    return mysql2.createPool(process.env.PLANETSCALE_DATABASE_URL);
-  }
 }
 
 export function getConnectionForDbCreation() {
